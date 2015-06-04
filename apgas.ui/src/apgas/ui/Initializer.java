@@ -8,6 +8,7 @@ import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.URIUtil;
 import org.eclipse.jdt.core.ClasspathContainerInitializer;
 import org.eclipse.jdt.core.IClasspathAttribute;
 import org.eclipse.jdt.core.IClasspathContainer;
@@ -41,18 +42,19 @@ public class Initializer extends ClasspathContainerInitializer {
       if (apgasFile.isDirectory()) {
         // --- This case has been added so that we can launch a runtime eclipse.
         final IClasspathAttribute atts[] = new IClasspathAttribute[] { JavaCore
-            .newClasspathAttribute("javadoc_location",
-                new Path(apgasFile.getPath()).append("doc").toFile().toURI()
-                    .toString()) };
+            .newClasspathAttribute("javadoc_location", new Path(apgasFile
+                .toURI().getPath()).append("doc").toFile().toURI().toString()) };
         apgas = JavaCore.newLibraryEntry(
             new Path(apgasFile.getPath()).append("bin"),
             new Path(apgasFile.getPath()).append("src"), null, null, atts,
             false);
       } else {
+        final IClasspathAttribute atts[] = new IClasspathAttribute[] { JavaCore
+            .newClasspathAttribute("javadoc_location",
+                URIUtil.toJarURI(apgasFile.toURI(), new Path("doc")).toString()) };
         apgas = JavaCore.newLibraryEntry(new Path(apgasFile.getPath()), null,
-            null);
+            null, null, atts, false);
       }
-
       final IClasspathEntry hazelcast = JavaCore.newLibraryEntry(new Path(
           FileLocator.getBundleFile(Platform.getBundle("com.hazelcast"))
               .getPath()), null, null);

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature url="features/apgas.compiler_1.0.0.qualifier.jar" id="apgas.compiler" version="1.0.0.qualifier" patch="true">
+      <category name="apgas.category"/>
+   </feature>
+   <feature url="features/apgas.runtime_1.0.0.qualifier.jar" id="apgas.runtime" version="1.0.0.qualifier">
+      <category name="apgas.category"/>
+   </feature>
+   <feature url="features/apgas.tools_1.0.0.qualifier.jar" id="apgas.tools" version="1.0.0.qualifier">
+      <category name="apgas.category"/>
+   </feature>
+   <category-def name="apgas.category" label="APGAS"/>
+</site>

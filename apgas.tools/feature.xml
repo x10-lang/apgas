@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="apgas.tools"
+      label="APGAS Development Tools"
+      version="1.0.0.qualifier">
+
+   <description>
+      This feature provides the APGAS Development Tools.
+   </description>
+
+   <copyright>
+      Copyright IBM Corporation 2006-2015.
+   </copyright>
+
+   <license url="http://www.opensource.org/licenses/eclipse-1.0.php">
+      This file is part of the X10 project (http://x10-lang.org).
+ 
+ This file is licensed to You under the Eclipse Public License (EPL);
+ You may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+     http://www.opensource.org/licenses/eclipse-1.0.php
+ 
+ (C) Copyright IBM Corporation 2006-2015.
+   </license>
+
+   <plugin
+         id="apgas.ui"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+</feature>

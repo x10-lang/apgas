@@ -65,4 +65,12 @@
             name="APGAS ClasspathFix Processor">
       </classpathFixProcessor>
    </extension>
+      <extension
+         point="org.eclipse.jdt.ui.classpathContainerPage">
+      <classpathContainerPage
+            id="apgas.ui.buildpath.APGAS_CONTAINER"
+            name="APGAS Library"
+            class="apgas.ui.buildpath.APGASContainerPage">
+      </classpathContainerPage>
+   </extension>
 </plugin>

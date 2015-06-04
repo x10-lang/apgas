@@ -36,55 +36,22 @@ public class APGASQuickfixProcessor implements IQuickFixProcessor {
   public IJavaCompletionProposal[] getCorrections(IInvocationContext context,
       IProblemLocation[] locations) throws CoreException {
     for (final IProblemLocation problem : locations) {
-      if (((problem.getProblemId() == IProblem.UnresolvedVariable || problem
-          .getProblemId() == IProblem.UndefinedType) && isAPGAS(problem
-          .getProblemArguments()[0]))
-          || (problem.getProblemId() == IProblem.UndefinedMethod && isAPGAS(problem
-              .getProblemArguments()[1]))) {
+      if ((problem.getProblemId() == IProblem.UnresolvedVariable || problem
+          .getProblemId() == IProblem.UndefinedType)
+          && Utils.isAPGAS(problem.getProblemArguments()[0])) {
         if (!apgasInBuildPath(context.getCompilationUnit().getJavaProject())) {
           return getAddAPGASToBuildPathProposals(context);
+        }
+      } else if (problem.getProblemId() == IProblem.UndefinedMethod
+          && Utils.isAPGAS(problem.getProblemArguments()[1])) {
+        if (!apgasInBuildPath(context.getCompilationUnit().getJavaProject())) {
+          return getAddAPGASToBuildPathProposals(context);
+        } else {
+          return getImportStaticConstructsProposal(context);
         }
       }
     }
     return null;
-  }
-
-  private boolean isAPGAS(String name) {
-    switch (name) {
-    // Constructs
-    case "finish":
-      break;
-    case "async":
-      break;
-    case "asyncAt":
-      break;
-    case "uncountedAsyncAt":
-      break;
-    case "at":
-      break;
-    case "here":
-      break;
-    case "place":
-      break;
-    case "places":
-      break;
-    // APGAS Classes
-    case "Configuration":
-      break;
-    case "Constructs":
-      break;
-    case "DeadPlaceException":
-      break;
-    case "GlobalRuntime":
-      break;
-    case "MultipleException":
-      break;
-    case "Place":
-      break;
-    default:
-      return false;
-    }
-    return true;
   }
 
   private boolean apgasInBuildPath(IJavaProject javaProject) {
@@ -102,12 +69,29 @@ public class APGASQuickfixProcessor implements IQuickFixProcessor {
       final int kind = entry.getEntryKind();
       final IPath path = entry.getPath();
       if (kind == IClasspathEntry.CPE_CONTAINER
-          && path.toString().equals(Initializer.APGAS_CONTAINER_ID)) {
+          && path.toString().contains(Initializer.APGAS_CONTAINER_ID)) {
         return true;
       }
 
     }
     return false;
+  }
+
+  private IJavaCompletionProposal[] getImportStaticConstructsProposal(
+      IInvocationContext context) {
+    final ICompilationUnit unit = context.getCompilationUnit();
+    final IJavaProject project = unit.getJavaProject();
+    final ImportRewrite rewrite = getImportRewrite(context.getASTRoot(),
+        "static apgas.Constructs.*");
+    final ArrayList<IJavaCompletionProposal> proposals = new ArrayList<IJavaCompletionProposal>();
+    proposals.add(new ConstructsImportProposal(project, rewrite));
+
+    final IJavaCompletionProposal[] propArr = new IJavaCompletionProposal[proposals
+        .size()];
+    for (int i = 0; i < proposals.size(); i++) {
+      propArr[i] = proposals.get(i);
+    }
+    return propArr;
   }
 
   private IJavaCompletionProposal[] getAddAPGASToBuildPathProposals(

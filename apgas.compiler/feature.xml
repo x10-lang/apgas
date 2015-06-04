@@ -2,7 +2,8 @@
 <feature
       id="apgas.compiler"
       label="APGAS Compiler Warnings"
-      version="1.0.0.qualifier">
+      version="1.0.0.qualifier"
+      provider-name="x10-users@lists.sourceforge.net">
 
    <description>
       This feature patches the JDT to generate better compiler warnings for APGAS.

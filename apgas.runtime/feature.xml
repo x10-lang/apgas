@@ -2,7 +2,8 @@
 <feature
       id="apgas.runtime"
       label="APGAS Runtime"
-      version="1.0.0.qualifier">
+      version="1.0.0.qualifier"
+      provider-name="x10-users@lists.sourceforge.net">
 
    <description>
       This feature provides the APGAS Runtime.

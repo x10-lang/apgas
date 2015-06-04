@@ -2,7 +2,8 @@
 <feature
       id="apgas.tools"
       label="APGAS Development Tools"
-      version="1.0.0.qualifier">
+      version="1.0.0.qualifier"
+      provider-name="x10-users@lists.sourceforge.net">
 
    <description>
       This feature provides the APGAS Development Tools.

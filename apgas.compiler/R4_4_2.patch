@@ -1,0 +1,109 @@
+diff --git a/org.eclipse.jdt.core/META-INF/MANIFEST.MF b/org.eclipse.jdt.core/META-INF/MANIFEST.MF
+index 8f1df79..ea03bfc 100644
+--- a/org.eclipse.jdt.core/META-INF/MANIFEST.MF
++++ b/org.eclipse.jdt.core/META-INF/MANIFEST.MF
+@@ -3,7 +3,7 @@ Main-Class: org.eclipse.jdt.internal.compiler.batch.Main
+ Bundle-ManifestVersion: 2
+ Bundle-Name: %pluginName
+ Bundle-SymbolicName: org.eclipse.jdt.core; singleton:=true
+-Bundle-Version: 3.10.2.qualifier
++Bundle-Version: 3.11.2.qualifier
+ Bundle-Activator: org.eclipse.jdt.core.JavaCore
+ Bundle-Vendor: %providerName
+ Bundle-Localization: plugin
+diff --git a/org.eclipse.jdt.core/compiler/org/eclipse/jdt/core/compiler/IProblem.java b/org.eclipse.jdt.core/compiler/org/eclipse/jdt/core/compiler/IProblem.java
+index cfcad13..d0f665f 100644
+--- a/org.eclipse.jdt.core/compiler/org/eclipse/jdt/core/compiler/IProblem.java
++++ b/org.eclipse.jdt.core/compiler/org/eclipse/jdt/core/compiler/IProblem.java
+@@ -1824,4 +1824,13 @@ void setSourceStart(int sourceStart);
+ 	/** @deprecated - problem is no longer generated (implementation issue has been resolved)
+ 	 * @since 3.10 */
+ 	int LambdaShapeComputationError = 1101;
++
++	/** @since 3.11 */
++	int SerializableLambdaCapturesThisWarning = 1102;
++
++	/** @since 3.11 */
++	int SerializableLambdaCapturesThisError = 1103;
++
++	/** @since 3.11 */
++	int SerializableLambdaCapturesVarError = 1104;
+ }
+diff --git a/org.eclipse.jdt.core/compiler/org/eclipse/jdt/internal/compiler/ast/LambdaExpression.java b/org.eclipse.jdt.core/compiler/org/eclipse/jdt/internal/compiler/ast/LambdaExpression.java
+index 3a94b20..64ab302 100644
+--- a/org.eclipse.jdt.core/compiler/org/eclipse/jdt/internal/compiler/ast/LambdaExpression.java
++++ b/org.eclipse.jdt.core/compiler/org/eclipse/jdt/internal/compiler/ast/LambdaExpression.java
+@@ -435,6 +435,10 @@ public class LambdaExpression extends FunctionalExpression implements ReferenceC
+ 		if (this.shouldCaptureInstance && this.scope.isConstructorCall) {
+ 			this.scope.problemReporter().fieldsOrThisBeforeConstructorInvocation(this);
+ 		}
++		if (this.isSerializable && this.shouldCaptureInstance) {
++			boolean error = !this.scope.enclosingReceiverType().isSubtypeOf(this.scope.getJavaIoSerializable());
++			this.scope.problemReporter().serializableLambdaCapturesThis(this, this.scope.enclosingReceiverType(), error);
++		}
+ 		return this.resolvedType;
+ 	}
+ 
+@@ -1204,6 +1208,9 @@ public class LambdaExpression extends FunctionalExpression implements ReferenceC
+ 				this.outerLocalVariablesSlotSize++;
+ 				break;
+ 		}		
++		if (this.isSerializable && !actualOuterLocalVariable.type.isPrimitiveType() && !actualOuterLocalVariable.type.isSubtypeOf(this.scope.getJavaIoSerializable())) {
++			this.scope.problemReporter().serializableLambdaCapturesVar(this, actualOuterLocalVariable);
++		}
+ 	}
+ 
+ 	public SyntheticArgumentBinding getSyntheticArgument(LocalVariableBinding actualOuterLocalVariable) {
+diff --git a/org.eclipse.jdt.core/compiler/org/eclipse/jdt/internal/compiler/problem/ProblemReporter.java b/org.eclipse.jdt.core/compiler/org/eclipse/jdt/internal/compiler/problem/ProblemReporter.java
+index 2394fc6..71df977 100644
+--- a/org.eclipse.jdt.core/compiler/org/eclipse/jdt/internal/compiler/problem/ProblemReporter.java
++++ b/org.eclipse.jdt.core/compiler/org/eclipse/jdt/internal/compiler/problem/ProblemReporter.java
+@@ -338,6 +338,9 @@ public static int getIrritant(int problemID) {
+ 		    return CompilerOptions.FinalParameterBound;
+ 
+ 		case IProblem.MissingSerialVersion:
++		case IProblem.SerializableLambdaCapturesThisError:
++		case IProblem.SerializableLambdaCapturesThisWarning:
++		case IProblem.SerializableLambdaCapturesVarError:
+ 			return CompilerOptions.MissingSerialVersion;
+ 
+ 		case IProblem.ForbiddenReference:
+@@ -1389,6 +1392,24 @@ public void lambdaSignatureMismatched(LambdaExpression target) {
+ 		target.diagnosticsSourceEnd());
+ }
+ 
++public void serializableLambdaCapturesThis(Expression expression, ReferenceBinding targetType, boolean error) {
++	this.handle(
++		error ? IProblem.SerializableLambdaCapturesThisError : IProblem.SerializableLambdaCapturesThisWarning,
++		new String[]{ new String(targetType.readableName())},
++		new String[]{ new String(targetType.shortReadableName())},
++		expression.sourceStart,
++		expression.sourceEnd);
++}
++
++public void serializableLambdaCapturesVar(Expression expression, LocalVariableBinding variable) {
++	this.handle(
++		IProblem.SerializableLambdaCapturesVarError,
++		new String[]{ new String(variable.readableName()), new String(variable.type.readableName())},
++		new String[]{ new String(variable.shortReadableName()), new String(variable.type.shortReadableName())},
++		expression.sourceStart,
++		expression.sourceEnd);
++}
++
+ public void lambdaParameterTypeMismatched(Argument argument, TypeReference type, TypeBinding expectedParameterType) {
+ 	String name = new String(argument.name);
+ 	String expectedTypeFullName = new String(expectedParameterType.readableName());
+diff --git a/org.eclipse.jdt.core/compiler/org/eclipse/jdt/internal/compiler/problem/messages.properties b/org.eclipse.jdt.core/compiler/org/eclipse/jdt/internal/compiler/problem/messages.properties
+index 9281559..fd4ff90 100644
+--- a/org.eclipse.jdt.core/compiler/org/eclipse/jdt/internal/compiler/problem/messages.properties
++++ b/org.eclipse.jdt.core/compiler/org/eclipse/jdt/internal/compiler/problem/messages.properties
+@@ -840,6 +840,9 @@
+ 1058 = Default methods are allowed only in interfaces.
+ 
+ 1100 = Problem detected during type inference: {0}
++1102 = Serializable lambda captures this with type {0}
++1103 = Serializable lambda captures this with non-serializable type {0}
++1104 = Serializable lambda captures variable {0} with non-serializable type {1}
+ 
+ ### ELABORATIONS
+ ## Access restrictions

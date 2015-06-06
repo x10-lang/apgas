@@ -107,3 +107,16 @@ index 9281559..fd4ff90 100644
  
  ### ELABORATIONS
  ## Access restrictions
+diff --git a/org.eclipse.jdt.core/pom.xml b/org.eclipse.jdt.core/pom.xml
+index 9619b36..5aeb789 100644
+--- a/org.eclipse.jdt.core/pom.xml
++++ b/org.eclipse.jdt.core/pom.xml
+@@ -18,7 +18,7 @@
+   </parent>
+   <groupId>org.eclipse.jdt</groupId>
+   <artifactId>org.eclipse.jdt.core</artifactId>
+-  <version>3.10.2-SNAPSHOT</version>
++  <version>3.11.2-SNAPSHOT</version>
+   <packaging>eclipse-plugin</packaging>
+ 
+   <properties>

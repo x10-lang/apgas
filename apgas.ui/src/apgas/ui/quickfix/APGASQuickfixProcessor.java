@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaProject;
@@ -69,7 +70,7 @@ public class APGASQuickfixProcessor implements IQuickFixProcessor {
       final int kind = entry.getEntryKind();
       final IPath path = entry.getPath();
       if (kind == IClasspathEntry.CPE_CONTAINER
-          && path.toString().contains(Initializer.APGAS_CONTAINER_ID)) {
+          && path.equals(new Path(Initializer.APGAS_CONTAINER_ID))) {
         return true;
       }
 

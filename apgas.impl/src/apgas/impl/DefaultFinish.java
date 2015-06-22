@@ -6,7 +6,7 @@
  *  You may obtain a copy of the License at
  *      http://www.opensource.org/licenses/eclipse-1.0.php
  *
- *  (C) Copyright IBM Corporation 2006-2014.
+ *  (C) Copyright IBM Corporation 2006-2015.
  */
 
 package apgas.impl;
@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import apgas.SerializableJob;
 import apgas.util.GlobalID;
 
 /**
@@ -45,8 +46,18 @@ import apgas.util.GlobalID;
  * <p>
  * The finish body counts as one local task.
  */
-final class DefaultFinish implements Finish, Serializable {
+final class DefaultFinish implements Serializable, Finish {
   private static final long serialVersionUID = 3789869778188598267L;
+
+  /**
+   * A factory producing {@link DefaultFinish} instances.
+   */
+  static class Factory extends Finish.Factory {
+    @Override
+    DefaultFinish make(Finish parent) {
+      return new DefaultFinish();
+    }
+  }
 
   /**
    * The {@link GlobalID} instance for this finish construct.
@@ -81,12 +92,10 @@ final class DefaultFinish implements Finish, Serializable {
 
   /**
    * Constructs a finish instance.
-   *
-   * @param p
-   *          the place ID of the main task
    */
-  DefaultFinish(int p) {
-    spawn(p);
+  DefaultFinish() {
+    final int here = GlobalRuntimeImpl.getRuntime().here;
+    spawn(here);
   }
 
   @Override
@@ -108,10 +117,11 @@ final class DefaultFinish implements Finish, Serializable {
           count++;
           return;
         }
-        counts = new int[GlobalRuntimeImpl.getRuntime().transport.places()];
+        counts = new int[GlobalRuntimeImpl.getRuntime().maxPlace()];
         counts[here] = count;
         count = 1;
-      } else if (p >= counts.length) {
+      }
+      if (p >= counts.length) {
         resize(p + 1);
       }
       if (counts[p]++ == 0) {
@@ -172,8 +182,9 @@ final class DefaultFinish implements Finish, Serializable {
       --counts[here];
       if (--count == 0) {
         final int _counts[] = counts;
+        final DefaultFinish that = this;
         GlobalRuntimeImpl.getRuntime().transport.send(id.home.id,
-            () -> update(_counts));
+            () -> that.update(_counts));
         Arrays.fill(counts, 0);
       }
     }
@@ -213,14 +224,19 @@ final class DefaultFinish implements Finish, Serializable {
       }
       exceptions.add(exception);
     } else {
-      // remote finish
-      new ExceptionalTask(this, exception, here).spawn();
+      // remote finish: spawn remote task to transfer exception to root finish
+      final SerializableThrowable t = new SerializableThrowable(exception);
+      final DefaultFinish that = this;
+      spawn(id.home.id);
+      new Task(this, (SerializableJob) () -> {
+        that.addSuppressed(t.t);
+      }, here).asyncat(id.home.id);
     }
   }
 
   @Override
-  public boolean waiting() {
-    return count != 0;
+  public synchronized boolean isReleasable() {
+    return count == 0;
   }
 
   @Override
@@ -229,13 +245,14 @@ final class DefaultFinish implements Finish, Serializable {
   }
 
   @Override
-  public synchronized void await() {
+  public synchronized boolean block() {
     while (count != 0) {
       try {
         wait();
       } catch (final InterruptedException e) {
       }
     }
+    return count == 0;
   }
 
   /**
@@ -245,8 +262,8 @@ final class DefaultFinish implements Finish, Serializable {
    *          a minimal size for the reallocation
    */
   private void resize(int min) {
-    final int[] tmp = new int[Math.max(min,
-        GlobalRuntimeImpl.getRuntime().transport.places())];
+    final int[] tmp = new int[Math.max(min, GlobalRuntimeImpl.getRuntime()
+        .maxPlace())];
     System.arraycopy(counts, 0, tmp, 0, counts.length);
     counts = tmp;
   }
@@ -284,14 +301,9 @@ final class DefaultFinish implements Finish, Serializable {
     synchronized (me) {
       final int here = GlobalRuntimeImpl.getRuntime().here;
       if (id.home.id != here && me.counts == null) {
-        me.counts = new int[GlobalRuntimeImpl.getRuntime().transport.places()];
+        me.counts = new int[GlobalRuntimeImpl.getRuntime().maxPlace()];
       }
     }
     return me;
-  }
-
-  @Override
-  public int home() {
-    return id == null ? GlobalRuntimeImpl.getRuntime().here : id.home.id;
   }
 }

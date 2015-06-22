@@ -6,7 +6,7 @@
  *  You may obtain a copy of the License at
  *      http://www.opensource.org/licenses/eclipse-1.0.php
  *
- *  (C) Copyright IBM Corporation 2006-2014.
+ *  (C) Copyright IBM Corporation 2006-2015.
  */
 
 package apgas.impl;
@@ -14,10 +14,13 @@ package apgas.impl;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.RecursiveAction;
 
+import apgas.DeadPlaceException;
 import apgas.Job;
-import apgas.NoSuchPlaceException;
-import apgas.Place;
+import apgas.SerializableJob;
 
 /**
  * The {@link Task} class represents an APGAS task.
@@ -26,7 +29,7 @@ import apgas.Place;
  * This class implements task serialization and handles errors in the
  * serialization process.
  */
-final class Task implements SerializableRunnable {
+final class Task extends RecursiveAction implements SerializableRunnable {
   private static final long serialVersionUID = 5288338719050788305L;
 
   /**
@@ -67,18 +70,17 @@ final class Task implements SerializableRunnable {
   public void run() {
     try {
       async(null);
-    } catch (final NoSuchPlaceException e) {
+    } catch (final DeadPlaceException e) {
       // source place has died while task was in transit, discard
     }
   }
 
   /**
    * Runs the task and notify the task's finish upon termination.
-   *
-   * @param worker
-   *          the worker thread running the task (cannot be null)
    */
-  void run(Worker worker) {
+  @Override
+  protected void compute() {
+    final Worker worker = (Worker) Thread.currentThread();
     worker.task = this;
     try {
       f.run();
@@ -98,11 +100,23 @@ final class Task implements SerializableRunnable {
   void finish(Worker worker) {
     if (worker == null) {
       async(worker);
-      finish.await();
+      try {
+        ForkJoinPool.managedBlock(finish);
+      } catch (final InterruptedException e) {
+      }
     } else {
       final Task savedTask = worker.task;
-      run(worker);
-      worker.help(finish);
+      compute();
+      Task t;
+      while (!finish.isReleasable()
+          && (t = (Task) ForkJoinTask.peekNextLocalTask()) != null
+          && finish == t.finish && t.tryUnfork()) {
+        t.compute();
+      }
+      try {
+        ForkJoinPool.managedBlock(finish);
+      } catch (final InterruptedException e) {
+      }
       worker.task = savedTask;
     }
   }
@@ -115,7 +129,11 @@ final class Task implements SerializableRunnable {
    */
   void async(Worker worker) {
     finish.submit(parent);
-    GlobalRuntimeImpl.getRuntime().scheduler.submit(worker, this);
+    if (worker == null) {
+      GlobalRuntimeImpl.getRuntime().execute(this);
+    } else {
+      fork();
+    }
   }
 
   /**
@@ -126,20 +144,20 @@ final class Task implements SerializableRunnable {
    * APGAS_SERIALIZATION_EXCEPTION is set to "true".
    *
    * @param p
-   *          the place of execution
+   *          the place ID
    */
-  void asyncat(Place p) {
+  void asyncat(int p) {
     try {
-      GlobalRuntimeImpl.getRuntime().transport.send(p.id, this);
+      GlobalRuntimeImpl.getRuntime().transport.send(p, this);
     } catch (final Throwable e) {
-      finish.unspawn(p.id);
-      if (GlobalRuntimeImpl.getRuntime().serializationException) {
+      finish.unspawn(p);
+      if (GlobalRuntimeImpl.getRuntime().serializationException
+          || e instanceof DeadPlaceException) {
         throw e;
       } else {
         final StackTraceElement elm = new Exception().getStackTrace()[3];
-        System.err
-            .println("[APGAS] Failed to spawn a remote async at place " + p.id
-                + " (" + elm.getFileName() + ":" + elm.getLineNumber() + ")");
+        System.err.println("[APGAS] Failed to spawn a remote async at place "
+            + p + " (" + elm.getFileName() + ":" + elm.getLineNumber() + ")");
         System.err.println("[APGAS] Caused by: " + e.getCause());
         System.err.println("[APGAS] Ignoring...");
       }
@@ -161,7 +179,7 @@ final class Task implements SerializableRunnable {
     out.writeObject(f);
   }
 
-  private static final Job NULL = () -> {
+  private static final SerializableJob NULL = () -> {
   };
 
   /**
@@ -183,14 +201,13 @@ final class Task implements SerializableRunnable {
     finish = (Finish) in.readObject();
     parent = in.readInt();
     try {
-      f = (Job) in.readObject();
+      f = (SerializableJob) in.readObject();
     } catch (final Throwable e) {
       if (GlobalRuntimeImpl.getRuntime().serializationException) {
-        new ExceptionalTask(finish, e, GlobalRuntimeImpl.getRuntime().here)
-            .spawn();
+        finish.addSuppressed(e);
       } else {
         final StackTraceElement elm = e.getStackTrace()[0];
-        System.err.println("[APGAS] Failed to a receive remote async at place "
+        System.err.println("[APGAS] Failed to receive remote async at place "
             + GlobalRuntimeImpl.getRuntime().here + " (" + elm.getFileName()
             + ":" + elm.getLineNumber() + ")");
         System.err.println("[APGAS] Caused by: " + e);

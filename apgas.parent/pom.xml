@@ -66,15 +66,15 @@
       <dependency>
         <groupId>com.hazelcast</groupId>
         <artifactId>hazelcast</artifactId>
-        <version>3.4</version>
+        <version>3.5.2</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
   
   <modules>
-    <module>../org.eclipse.jdt.core</module>
+    <module>../../eclipse.jdt.core/org.eclipse.jdt.core</module>
     <module>../apgas.compiler</module>
-    <module>../apgas</module>
+    <module>../../x10/apgas</module>
     <module>../apgas.runtime</module>
     <module>../apgas.ui</module>
     <module>../apgas.tools</module>

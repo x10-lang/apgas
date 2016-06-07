@@ -36,8 +36,8 @@ public class ConstructsImportProposal implements IJavaCompletionProposal {
   @Override
   public void apply(IDocument document) {
     try {
-      PlatformUI.getWorkbench().getActiveWorkbenchWindow()
-          .run(false, true, new IRunnableWithProgress() {
+      PlatformUI.getWorkbench().getActiveWorkbenchWindow().run(false, true,
+          new IRunnableWithProgress() {
             @Override
             public void run(IProgressMonitor monitor)
                 throws InvocationTargetException, InterruptedException {
@@ -48,8 +48,8 @@ public class ConstructsImportProposal implements IJavaCompletionProposal {
                     change);
                 op.setUndoManager(RefactoringCore.getUndoManager(),
                     getDisplayString());
-                op.setSchedulingRule(fJavaProject.getProject().getWorkspace()
-                    .getRoot());
+                op.setSchedulingRule(
+                    fJavaProject.getProject().getWorkspace().getRoot());
                 op.run(monitor);
               } catch (final CoreException e) {
                 throw new InvocationTargetException(e);

@@ -25,8 +25,8 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.ui.PlatformUI;
 
 @SuppressWarnings("javadoc")
-public class APGASClasspathFixCorrelationProposal implements
-    IJavaCompletionProposal {
+public class APGASClasspathFixCorrelationProposal
+    implements IJavaCompletionProposal {
 
   private final IJavaProject fJavaProject;
   private final ClasspathFixProposal fClasspathFixProposal;
@@ -43,8 +43,8 @@ public class APGASClasspathFixCorrelationProposal implements
   @Override
   public void apply(IDocument document) {
     try {
-      PlatformUI.getWorkbench().getActiveWorkbenchWindow()
-          .run(false, true, new IRunnableWithProgress() {
+      PlatformUI.getWorkbench().getActiveWorkbenchWindow().run(false, true,
+          new IRunnableWithProgress() {
             @Override
             public void run(IProgressMonitor monitor)
                 throws InvocationTargetException, InterruptedException {
@@ -55,8 +55,8 @@ public class APGASClasspathFixCorrelationProposal implements
                     change);
                 op.setUndoManager(RefactoringCore.getUndoManager(),
                     getDisplayString());
-                op.setSchedulingRule(fJavaProject.getProject().getWorkspace()
-                    .getRoot());
+                op.setSchedulingRule(
+                    fJavaProject.getProject().getWorkspace().getRoot());
                 op.run(monitor);
               } catch (final CoreException e) {
                 throw new InvocationTargetException(e);
@@ -78,8 +78,8 @@ public class APGASClasspathFixCorrelationProposal implements
       final CompositeChange composite = new CompositeChange(getDisplayString());
       composite.add(change);
       for (final ImportRewrite ir : fImportRewrites) {
-        final TextFileChange cuChange = new TextFileChange(
-            "Add import", (IFile) ir.getCompilationUnit().getResource()); //$NON-NLS-1$
+        final TextFileChange cuChange = new TextFileChange("Add import", //$NON-NLS-1$
+            (IFile) ir.getCompilationUnit().getResource());
         cuChange.setEdit(ir.rewriteImports(null));
         composite.add(cuChange);
       }

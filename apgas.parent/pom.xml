@@ -6,15 +6,15 @@
   <packaging>pom</packaging>
 
   <properties>
-    <tycho.version>0.21.0</tycho.version>
+    <tycho.version>0.23.1</tycho.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <luna-repo.url>http://download.eclipse.org/releases/luna</luna-repo.url>
+    <mars-repo.url>http://download.eclipse.org/releases/mars</mars-repo.url>
   </properties>
 
   <repositories>
      <repository>
-      <id>luna</id>
-      <url>${luna-repo.url}</url>
+      <id>mars</id>
+      <url>${mars-repo.url}</url>
       <layout>p2</layout>
     </repository>
   </repositories>
@@ -66,7 +66,7 @@
       <dependency>
         <groupId>com.hazelcast</groupId>
         <artifactId>hazelcast</artifactId>
-        <version>3.5.2</version>
+        <version>3.6.3</version>
       </dependency>
     <dependency>
       <groupId>com.esotericsoftware</groupId>
@@ -77,8 +77,6 @@
   </dependencyManagement>
   
   <modules>
-    <module>../../eclipse.jdt.core/org.eclipse.jdt.core</module>
-    <module>../apgas.compiler</module>
     <module>../../x10/apgas</module>
     <module>../apgas.runtime</module>
     <module>../apgas.ui</module>

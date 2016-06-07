@@ -8,7 +8,6 @@
   </parent>
   <artifactId>apgas.runtime</artifactId>
   <packaging>eclipse-feature</packaging>
-
   <dependencies>
     <dependency>
       <groupId>com.hazelcast</groupId>

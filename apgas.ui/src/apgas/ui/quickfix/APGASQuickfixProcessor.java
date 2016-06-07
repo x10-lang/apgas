@@ -37,8 +37,8 @@ public class APGASQuickfixProcessor implements IQuickFixProcessor {
   public IJavaCompletionProposal[] getCorrections(IInvocationContext context,
       IProblemLocation[] locations) throws CoreException {
     for (final IProblemLocation problem : locations) {
-      if ((problem.getProblemId() == IProblem.UnresolvedVariable || problem
-          .getProblemId() == IProblem.UndefinedType)
+      if ((problem.getProblemId() == IProblem.UnresolvedVariable
+          || problem.getProblemId() == IProblem.UndefinedType)
           && Utils.isAPGAS(problem.getProblemArguments()[0])) {
         if (!apgasInBuildPath(context.getCompilationUnit().getJavaProject())) {
           return getAddAPGASToBuildPathProposals(context);

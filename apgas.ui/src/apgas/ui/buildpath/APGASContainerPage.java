@@ -18,8 +18,8 @@ import org.eclipse.swt.widgets.Label;
 
 import apgas.ui.Initializer;
 
-public class APGASContainerPage extends WizardPage implements
-    IClasspathContainerPage, IClasspathContainerPageExtension {
+public class APGASContainerPage extends WizardPage
+    implements IClasspathContainerPage, IClasspathContainerPageExtension {
 
   private Combo mProjectsCombo;
   private IProject mOwnerProject;
@@ -76,7 +76,8 @@ public class APGASContainerPage extends WizardPage implements
   }
 
   @Override
-  public void initialize(IJavaProject project, IClasspathEntry[] currentEntries) {
+  public void initialize(IJavaProject project,
+      IClasspathEntry[] currentEntries) {
     this.mOwnerProject = (project == null ? null : project.getProject());
   }
 
@@ -104,8 +105,8 @@ public class APGASContainerPage extends WizardPage implements
 
   @Override
   public void setSelection(IClasspathEntry containerEntry) {
-    final IPath path = (containerEntry == null ? null : containerEntry
-        .getPath());
+    final IPath path = (containerEntry == null ? null
+        : containerEntry.getPath());
 
     if (path == null || path.segmentCount() == 1) {
       if (this.mOwnerProject != null) {

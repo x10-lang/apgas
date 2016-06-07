@@ -23,9 +23,9 @@ public class Handler extends AbstractHandler {
     final IPath containerPath = new Path(Initializer.APGAS_CONTAINER_ID);
     try {
       final IJavaProject javaProject = JavaCore
-          .create((IProject) ((IAdaptable) ((IStructuredSelection) HandlerUtil
+          .create(((IAdaptable) ((IStructuredSelection) HandlerUtil
               .getCurrentSelection(event)).getFirstElement())
-              .getAdapter(IProject.class));
+                  .getAdapter(IProject.class));
       final IClasspathEntry[] entries = javaProject.getRawClasspath();
       for (int i = 0; i < entries.length; i++) {
         if (entries[i].getEntryKind() == IClasspathEntry.CPE_CONTAINER

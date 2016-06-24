@@ -4,7 +4,7 @@
     <groupId>apgas.group</groupId>
     <artifactId>apgas.parent</artifactId>
     <version>2.0.0-SNAPSHOT</version>
-    <relativePath>../../x10dt/apgas.parent</relativePath>
+    <relativePath>../apgas.parent</relativePath>
   </parent>
   <artifactId>apgas</artifactId>
   <packaging>eclipse-plugin</packaging>

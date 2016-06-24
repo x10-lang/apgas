@@ -79,7 +79,7 @@
   <modules>
     <module>../../eclipse.jdt.core/org.eclipse.jdt.core</module>
     <module>../apgas.compiler</module>
-    <module>../../x10/apgas</module>
+    <module>../apgas</module>
     <module>../apgas.runtime</module>
     <module>../apgas.ui</module>
     <module>../apgas.tools</module>

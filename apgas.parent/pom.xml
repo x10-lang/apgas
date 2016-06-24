@@ -2,19 +2,19 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>apgas.group</groupId>
   <artifactId>apgas.parent</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>2.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <properties>
-    <tycho.version>0.23.1</tycho.version>
+    <tycho.version>0.25.0</tycho.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <mars-repo.url>http://download.eclipse.org/releases/mars</mars-repo.url>
+    <neon-repo.url>http://download.eclipse.org/releases/neon</neon-repo.url>
   </properties>
 
   <repositories>
      <repository>
-      <id>mars</id>
-      <url>${mars-repo.url}</url>
+      <id>neon</id>
+      <url>${neon-repo.url}</url>
       <layout>p2</layout>
     </repository>
   </repositories>
@@ -77,6 +77,8 @@
   </dependencyManagement>
   
   <modules>
+    <module>../../eclipse.jdt.core/org.eclipse.jdt.core</module>
+    <module>../apgas.compiler</module>
     <module>../../x10/apgas</module>
     <module>../apgas.runtime</module>
     <module>../apgas.ui</module>

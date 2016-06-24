@@ -1,0 +1,8 @@
+*.class
+*.jar
+*.zip
+**/target/
+**/bin/
+.metadata/
+apgas/doc
+apgas/samples

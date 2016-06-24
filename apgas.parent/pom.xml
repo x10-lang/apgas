@@ -77,7 +77,7 @@
   </dependencyManagement>
   
   <modules>
-    <module>../../eclipse.jdt.core/org.eclipse.jdt.core</module>
+    <module>../eclipse.jdt.core/org.eclipse.jdt.core</module>
     <module>../apgas.compiler</module>
     <module>../apgas</module>
     <module>../apgas.runtime</module>

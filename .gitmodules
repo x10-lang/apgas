@@ -1,0 +1,3 @@
+[submodule "eclipse.jdt.core"]
+	path = eclipse.jdt.core
+	url = https://git.eclipse.org/r/jdt/eclipse.jdt.core

@@ -58,7 +58,13 @@
         <delete dir="${doc}" failonerror="false"/>
         <delete dir="${samples}" failonerror="false"/>
     </target>
-    <target name="jar" depends="compile">
+    <target name="jar" depends="compile,javadoc">
+        <copy todir="${bin}/src">
+            <fileset dir="${src}"/>
+        </copy>
+        <copy todir="${bin}/doc">
+            <fileset dir="${doc}"/>
+        </copy>
         <jar jarfile="${jar}" basedir="${bin}"/>
     </target>
     <target name="compile" depends="hazelcast,kryo,minlog,reflectasm,objenesis">
@@ -73,7 +79,7 @@
         </copy>
         <replace dir="${samples}" token="package apgas.examples;"/>
     </target>
-    <target name="zip" depends="clean,jar,samples,javadoc">
+    <target name="zip" depends="clean,jar,samples">
         <zip destfile="${apgas.zip}" basedir="${basedir}" includes="README.txt,epl-v10.html,lib/**,samples/**"/>
     </target>
     <target name="javadoc">

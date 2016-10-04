@@ -127,7 +127,7 @@ public class Transport implements com.hazelcast.core.ItemListener<Member>,
     config.setProperty("hazelcast.logging.type", "none");
     config.setProperty("hazelcast.wait.seconds.before.join", "0");
     config.setProperty("hazelcast.socket.connect.timeout.seconds", "1");
-    config.setProperty("hazelcast.connection.monitor.max.faults", "1");
+    config.setProperty("hazelcast.connection.monitor.max.faults", "0");
     if (compact) {
       config.setProperty("hazelcast.operation.thread.count", "2");
       config.setProperty("hazelcast.operation.generic.thread.count", "2");

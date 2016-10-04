@@ -69,7 +69,7 @@ public class Transport implements com.hazelcast.core.ItemListener<Member>,
   /**
    * The current members indexed by place ID.
    */
-  private final Map<Integer, Member> map = new ConcurrentHashMap<Integer, Member>();
+  private final Map<Integer, Member> map = new ConcurrentHashMap<>();
 
   /**
    * Past and present members indexed by place ID.
@@ -126,6 +126,8 @@ public class Transport implements com.hazelcast.core.ItemListener<Member>,
     final Config config = new Config();
     config.setProperty("hazelcast.logging.type", "none");
     config.setProperty("hazelcast.wait.seconds.before.join", "0");
+    config.setProperty("hazelcast.socket.connect.timeout.seconds", "1");
+    config.setProperty("hazelcast.connection.monitor.max.faults", "1");
     if (compact) {
       config.setProperty("hazelcast.operation.thread.count", "2");
       config.setProperty("hazelcast.operation.generic.thread.count", "2");
@@ -287,8 +289,8 @@ public class Transport implements com.hazelcast.core.ItemListener<Member>,
       return;
     }
     final Iterator<Member> it = allMembers.iterator();
-    final ArrayList<Integer> added = new ArrayList<Integer>();
-    final ArrayList<Integer> removed = new ArrayList<Integer>();
+    final ArrayList<Integer> added = new ArrayList<>();
+    final ArrayList<Integer> removed = new ArrayList<>();
     int place = 0;
     while (it.hasNext()) {
       final Member member = it.next();

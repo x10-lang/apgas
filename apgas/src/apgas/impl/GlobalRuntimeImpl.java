@@ -91,7 +91,7 @@ public final class GlobalRuntimeImpl extends GlobalRuntime {
   /**
    * The mutable set of places in this global runtime instance.
    */
-  final SortedSet<Place> placeSet = new TreeSet<Place>();
+  final SortedSet<Place> placeSet = new TreeSet<>();
 
   /**
    * An immutable ordered list of the current places.
@@ -198,7 +198,7 @@ public final class GlobalRuntimeImpl extends GlobalRuntime {
 
       if (master == null && args != null && args.length > 0) {
         // invoked as a launcher
-        final ArrayList<String> command = new ArrayList<String>();
+        final ArrayList<String> command = new ArrayList<>();
         command.add(java);
         command.add("-Duser.dir=" + System.getProperty("user.dir"));
         command.add("-Xbootclasspath:"
@@ -371,7 +371,7 @@ public final class GlobalRuntimeImpl extends GlobalRuntime {
       // launch additional places
       if (master == null && p > 1) {
         try {
-          final ArrayList<String> command = new ArrayList<String>();
+          final ArrayList<String> command = new ArrayList<>();
           command.add(java);
           command.add("-Duser.dir=" + System.getProperty("user.dir"));
           command.add("-Xbootclasspath:"
@@ -430,7 +430,7 @@ public final class GlobalRuntimeImpl extends GlobalRuntime {
         placeSet.remove(new Place(id));
       }
       places = Collections
-          .<Place> unmodifiableList(new ArrayList<Place>(placeSet));
+          .<Place> unmodifiableList(new ArrayList<>(placeSet));
     }
     if (removed.isEmpty()) {
       return;
@@ -516,7 +516,7 @@ public final class GlobalRuntimeImpl extends GlobalRuntime {
    * @return the result of the evaluation
    */
   public <T> T finish(Callable<T> f) {
-    final Cell<T> cell = new Cell<T>();
+    final Cell<T> cell = new Cell<>();
     finish(() -> cell.set(f.call()));
     return cell.get();
   }

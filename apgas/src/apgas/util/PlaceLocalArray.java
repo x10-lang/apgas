@@ -78,6 +78,6 @@ public class PlaceLocalArray<T> extends PlaceLocalObject {
   public static <T> PlaceLocalArray<T> make(Collection<? extends Place> places,
       int localLength, T... array) {
     return PlaceLocalObject.make(places,
-        () -> new PlaceLocalArray<T>(Arrays.copyOf(array, localLength)));
+        () -> new PlaceLocalArray<>(Arrays.copyOf(array, localLength)));
   }
 }

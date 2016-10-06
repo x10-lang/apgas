@@ -105,7 +105,7 @@ final class ResilientUTS extends PlaceLocalObject {
     final MessageDigest md = UTS.encoder();
     final UTS bag = new UTS(64);
     // pending requests from thieves
-    final ConcurrentLinkedQueue<Integer> thieves = new ConcurrentLinkedQueue<Integer>();
+    final ConcurrentLinkedQueue<Integer> thieves = new ConcurrentLinkedQueue<>();
     final AtomicBoolean lifeline; // pending lifeline request?
     int state = -2; // -3: abort, -2: inactive, -1: running, p: stealing from p
 
@@ -292,7 +292,7 @@ final class ResilientUTS extends PlaceLocalObject {
     } catch (final DeadPlacesException e) {
     }
     final UTS bag = new UTS();
-    final List<UTS> l = new ArrayList<UTS>();
+    final List<UTS> l = new ArrayList<>();
     if (resilient) {
       final Collection<UTS> values = uts.hz
           .executeTransaction((TransactionalTaskContext context) -> {
@@ -325,7 +325,7 @@ final class ResilientUTS extends PlaceLocalObject {
   }
 
   static List<UTS> explode(UTS bag) {
-    final List<UTS> bags = new ArrayList<UTS>();
+    final List<UTS> bags = new ArrayList<>();
     for (int i = 0; i < bag.upper[0]; i++) {
       final UTS b = new UTS(64);
       b.merge(bag);

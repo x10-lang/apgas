@@ -85,7 +85,7 @@ class ResilientFinish implements Serializable, Finish {
       }
       if (state.dids == null || !state.dids.contains(id)) {
         if (state.cids == null) {
-          state.cids = new HashSet<GlobalID>();
+          state.cids = new HashSet<>();
         }
         state.cids.add(id);
       }
@@ -172,7 +172,7 @@ class ResilientFinish implements Serializable, Finish {
         throw new DeadPlaceError();
       }
       if (state.exceptions == null) {
-        state.exceptions = new ArrayList<SerializableThrowable>();
+        state.exceptions = new ArrayList<>();
       }
       state.exceptions.add(t);
       return state;
@@ -231,7 +231,7 @@ class ResilientFinish implements Serializable, Finish {
     if (exceptions == null) {
       return null;
     }
-    final List<Throwable> list = new ArrayList<Throwable>();
+    final List<Throwable> list = new ArrayList<>();
     for (final SerializableThrowable t : exceptions) {
       list.add(t.t);
     }

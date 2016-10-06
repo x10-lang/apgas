@@ -25,7 +25,7 @@ final class SshLauncher implements Launcher {
   /**
    * The processes we spawned.
    */
-  private final List<Process> processes = new ArrayList<Process>();
+  private final List<Process> processes = new ArrayList<>();
 
   /**
    * Status of the shutdown sequence (0 live, 1 shutting down the Global

@@ -102,7 +102,7 @@ final class ResilientFinishOpt implements Serializable, Finish {
       // root finish
       synchronized (this) {
         if (exceptions == null) {
-          exceptions = new ArrayList<Throwable>();
+          exceptions = new ArrayList<>();
         }
         exceptions.add(exception); // add exeption to this instance
       }

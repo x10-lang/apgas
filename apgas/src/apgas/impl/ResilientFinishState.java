@@ -67,7 +67,7 @@ final class ResilientFinishState implements Serializable {
   /**
    * The task counts.
    */
-  final Map<Long, Integer> counts = new HashMap<Long, Integer>();
+  final Map<Long, Integer> counts = new HashMap<>();
 
   /**
    * The largest place ID encountered so far.
@@ -186,7 +186,7 @@ final class ResilientFinishState implements Serializable {
           return null;
         }
         if (state.deads == null) {
-          state.deads = new HashSet<Integer>();
+          state.deads = new HashSet<>();
         }
         if (state.deads.contains(p)) {
           // death of p has already been processed
@@ -200,7 +200,7 @@ final class ResilientFinishState implements Serializable {
         }
         if (state.counts.size() < count) {
           if (state.exceptions == null) {
-            state.exceptions = new ArrayList<SerializableThrowable>();
+            state.exceptions = new ArrayList<>();
           }
           state.exceptions.add(
               new SerializableThrowable(new DeadPlaceException(new Place(p))));
@@ -363,7 +363,7 @@ final class ResilientFinishState implements Serializable {
                 state.cids.remove(id);
               } else {
                 if (state.dids == null) {
-                  state.dids = new HashSet<GlobalID>();
+                  state.dids = new HashSet<>();
                 }
                 if (!state.dids.contains(id)) {
                   state.dids.add(id);

@@ -39,7 +39,7 @@ public class GlobalID implements Serializable {
   /**
    * Internal map.
    */
-  protected static final Map<GlobalID, Object> map = new ConcurrentHashMap<GlobalID, Object>();
+  protected static final Map<GlobalID, Object> map = new ConcurrentHashMap<>();
 
   /**
    * The {@link Place} where this {@link GlobalID} was instantiated.

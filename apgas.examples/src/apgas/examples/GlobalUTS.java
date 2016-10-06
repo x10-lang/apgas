@@ -29,7 +29,7 @@ final class GlobalUTS extends PlaceLocalObject {
   final Random random = new Random(home.id);
   final MessageDigest md = UTS.encoder();
   final UTS bag = new UTS(64);
-  final ConcurrentLinkedQueue<Place> thieves = new ConcurrentLinkedQueue<Place>();
+  final ConcurrentLinkedQueue<Place> thieves = new ConcurrentLinkedQueue<>();
   final AtomicBoolean lifeline = new AtomicBoolean(home.id != places - 1);
   int state = -2; // -2: inactive, -1: running, p: stealing from p
 

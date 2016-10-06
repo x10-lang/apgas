@@ -70,15 +70,15 @@ public class KMeans {
           Integer.valueOf(System.getProperty(Configuration.APGAS_THREADS)));
     }
 
-    final GlobalRef<ClusterState> globalClusterState = new GlobalRef<ClusterState>(
+    final GlobalRef<ClusterState> globalClusterState = new GlobalRef<>(
         places(), () -> {
           return new ClusterState();
         });
-    final GlobalRef<float[][]> globalCurrentClusters = new GlobalRef<float[][]>(
+    final GlobalRef<float[][]> globalCurrentClusters = new GlobalRef<>(
         places(), () -> {
           return new float[CLUSTERS][DIM];
         });
-    final GlobalRef<float[][]> globalPoints = new GlobalRef<float[][]>(places(),
+    final GlobalRef<float[][]> globalPoints = new GlobalRef<>(places(),
         () -> {
           final Random rand = new Random(here().id);
           final float[][] localPoints = new float[numPoints
@@ -93,7 +93,7 @@ public class KMeans {
         });
 
     final ClusterState centralClusterState = new ClusterState();
-    final GlobalRef<ClusterState> centralClusterStateGr = new GlobalRef<ClusterState>(
+    final GlobalRef<ClusterState> centralClusterStateGr = new GlobalRef<>(
         centralClusterState);
     final float[][] centralCurrentClusters = new float[CLUSTERS][DIM];
 

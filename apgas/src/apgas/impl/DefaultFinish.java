@@ -217,7 +217,7 @@ final class DefaultFinish implements Serializable, Finish {
     if (id == null || id.home.id == here) {
       // root finish
       if (exceptions == null) {
-        exceptions = new ArrayList<Throwable>();
+        exceptions = new ArrayList<>();
       }
       exceptions.add(exception);
     } else {
@@ -267,7 +267,7 @@ final class DefaultFinish implements Serializable, Finish {
 
   /**
    * Prepares the finish object for serialization.
-   * 
+   *
    * @return this
    */
   public synchronized Object writeReplace() {

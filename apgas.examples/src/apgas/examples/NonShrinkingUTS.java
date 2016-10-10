@@ -83,11 +83,6 @@ final class NonShrinkingUTS extends PlaceLocalObject {
     if (!group.contains(p)) {
       return;
     }
-    if (GlobalRuntime.getRuntime().lastfailureTime() != null) {
-      System.err.println("A "
-          + (System.nanoTime() - GlobalRuntime.getRuntime().lastfailureTime())
-              / 1e9);
-    }
     if (p.id > 0) {
       System.err.println("Observing failure of " + p + " from " + here());
     }
@@ -285,9 +280,10 @@ final class NonShrinkingUTS extends PlaceLocalObject {
         });
       }
       if (GlobalRuntime.getRuntime().lastfailureTime() != null) {
-        System.err.println("B "
+        System.err.println("Recovered in "
             + (System.nanoTime() - GlobalRuntime.getRuntime().lastfailureTime())
-                / 1e9);
+                / 1e9
+            + "s");
       }
       uts.workers[0].run();
     });

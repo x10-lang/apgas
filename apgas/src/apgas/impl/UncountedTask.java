@@ -60,6 +60,8 @@ final class UncountedTask extends RecursiveAction
   @Override
   protected void compute() {
     try {
+      final Worker worker = (Worker) Thread.currentThread();
+      worker.task = null; // a handler is not a task (yet)
       f.run();
     } catch (final Throwable t) {
       System.err.println("[APGAS] Uncaught exception in uncounted task");

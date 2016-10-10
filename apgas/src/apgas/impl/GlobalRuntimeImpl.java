@@ -449,6 +449,8 @@ public final class GlobalRuntimeImpl extends GlobalRuntime {
 
       @Override
       public void compute() {
+        final Worker worker = (Worker) Thread.currentThread();
+        worker.task = null; // a handler is not a task (yet)
         for (final int id : removed) {
           ResilientFinishState.purge(id);
         }
@@ -496,8 +498,8 @@ public final class GlobalRuntimeImpl extends GlobalRuntime {
    */
   public void finish(Job f) {
     final Worker worker = currentWorker();
-    final Finish finish = factory
-        .make(worker == null ? NullFinish.SINGLETON : worker.task.finish);
+    final Finish finish = factory.make(worker == null || worker.task == null
+        ? NullFinish.SINGLETON : worker.task.finish);
     new Task(finish, f, here).finish(worker);
     final List<Throwable> exceptions = finish.exceptions();
     if (exceptions != null) {
@@ -534,8 +536,8 @@ public final class GlobalRuntimeImpl extends GlobalRuntime {
    */
   public void async(Job f) {
     final Worker worker = currentWorker();
-    final Finish finish = worker == null ? NullFinish.SINGLETON
-        : worker.task.finish;
+    final Finish finish = worker == null || worker.task == null
+        ? NullFinish.SINGLETON : worker.task.finish;
     finish.spawn(here);
     new Task(finish, f, here).async(worker);
   }
@@ -551,8 +553,8 @@ public final class GlobalRuntimeImpl extends GlobalRuntime {
    */
   public void asyncAt(Place p, SerializableJob f) {
     final Worker worker = currentWorker();
-    final Finish finish = worker == null ? NullFinish.SINGLETON
-        : worker.task.finish;
+    final Finish finish = worker == null || worker.task == null
+        ? NullFinish.SINGLETON : worker.task.finish;
     finish.spawn(p.id);
     new Task(finish, f, here).asyncAt(p.id);
   }

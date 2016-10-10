@@ -97,4 +97,12 @@ public abstract class GlobalRuntime {
     GlobalRuntime.args = args;
     getRuntime();
   }
+
+  /**
+   * Returns the time of the last place failure as reported by
+   * {@link System#nanoTime} if any or null otherwise.
+   *
+   * @return the time of the last place failure or null
+   */
+  public abstract Long lastfailureTime();
 }

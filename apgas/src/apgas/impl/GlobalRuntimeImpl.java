@@ -114,6 +114,11 @@ public final class GlobalRuntimeImpl extends GlobalRuntime {
   private boolean dying;
 
   /**
+   * The time of the last place failure.
+   */
+  Long failureTime;
+
+  /**
    * The resilient map from finish IDs to finish states.
    */
   final IMap<GlobalID, ResilientFinishState> resilientFinishMap;
@@ -429,8 +434,7 @@ public final class GlobalRuntimeImpl extends GlobalRuntime {
       for (final int id : removed) {
         placeSet.remove(new Place(id));
       }
-      places = Collections
-          .<Place> unmodifiableList(new ArrayList<>(placeSet));
+      places = Collections.<Place> unmodifiableList(new ArrayList<>(placeSet));
     }
     if (removed.isEmpty()) {
       return;
@@ -671,5 +675,10 @@ public final class GlobalRuntimeImpl extends GlobalRuntime {
    */
   void execute(ForkJoinTask<?> task) {
     pool.execute(task);
+  }
+
+  @Override
+  public Long lastfailureTime() {
+    return failureTime;
   }
 }

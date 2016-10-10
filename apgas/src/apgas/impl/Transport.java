@@ -329,9 +329,9 @@ public class Transport implements com.hazelcast.core.ItemListener<Member>,
 
   @Override
   synchronized public void memberRemoved(MembershipEvent membershipEvent) {
+    runtime.failureTime = System.nanoTime();
     currentMembers = membershipEvent.getMembers();
     updatePlaces();
-
   }
 
   @Override

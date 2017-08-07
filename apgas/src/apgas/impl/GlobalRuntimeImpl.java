@@ -683,4 +683,59 @@ public final class GlobalRuntimeImpl extends GlobalRuntime {
   public Long lastfailureTime() {
     return failureTime;
   }
+
+  /**
+   * Returns the aliveness status of the passed place
+   *
+   * @param p
+   *          the place to check
+   *
+   * @return the aliveness status of the passed places
+   */
+  public boolean isDead(Place p) {
+    return !this.places.contains(p);
+  }
+
+  /**
+   * Returns the closest {@link Place} alive in the ring of places that comes
+   * behind the passed place.
+   *
+   * @param p
+   *          the base place
+   *
+   * @return the closest {@link Place} alive in the ring of places that comes
+   *         behind the passed place.
+   */
+  public Place nextPlace(Place p) {
+    final List<? extends Place> tmpPlaces = new ArrayList<>(places());
+    for (final Place tmp : tmpPlaces) {
+      if (tmp.id > p.id) {
+        return tmp;
+      }
+    }
+    return tmpPlaces.get(0);
+  }
+
+  /**
+   * Returns the closest {@link Place} alive in the ring of places that comes
+   * before the passed place.
+   *
+   * @param p
+   *          the base place
+   *
+   * @return the closest {@link Place} alive in the ring of places that comes
+   *         before the passed place.
+   */
+  public Place prevPlace(Place p) {
+    final List<? extends Place> tmpPlaces = new ArrayList<>(places());
+    Place prev = tmpPlaces.get(tmpPlaces.size() - 1);
+    for (final Place tmp : tmpPlaces) {
+      if (tmp.id < p.id) {
+        prev = tmp;
+      } else {
+        return prev;
+      }
+    }
+    return prev;
+  }
 }

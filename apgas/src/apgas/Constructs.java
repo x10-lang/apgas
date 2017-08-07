@@ -160,4 +160,44 @@ public final class Constructs {
   public static List<? extends Place> places() {
     return GlobalRuntime.getRuntimeImpl().places();
   }
+
+  /**
+   * Returns the aliveness status of the passed place
+   *
+   * @param p
+   *          the place to check
+   *
+   * @return the aliveness status of the passed places
+   */
+  public static boolean isDead(Place p) {
+    return GlobalRuntime.getRuntimeImpl().isDead(p);
+  }
+
+  /**
+   * Returns the closest {@link Place} alive in the ring of places that comes
+   * behind the passed place.
+   *
+   * @param p
+   *          the base place
+   *
+   * @return the closest {@link Place} alive in the ring of places that comes
+   *         behind the passed place.
+   */
+  public static Place nextPlace(Place p) {
+    return GlobalRuntime.getRuntimeImpl().nextPlace(p);
+  }
+
+  /**
+   * Returns the closest {@link Place} alive in the ring of places that comes
+   * before the passed place.
+   *
+   * @param p
+   *          the base place
+   *
+   * @return the closest {@link Place} alive in the ring of places that comes
+   *         before the passed place.
+   */
+  public static Place prevPlace(Place p) {
+    return GlobalRuntime.getRuntimeImpl().prevPlace(p);
+  }
 }

@@ -3,6 +3,7 @@
 	<name>apgas.examples</name>
 	<comment></comment>
 	<projects>
+		<project>apgas</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

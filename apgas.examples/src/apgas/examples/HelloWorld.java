@@ -16,6 +16,10 @@ import static apgas.Constructs.*;
 import apgas.Configuration;
 import apgas.Place;
 
+/**
+ * Calls a "Hello World" from available places. The number of places to be used
+ * can be set by defining {@link Configuration#APGAS_PLACES}. Default is 4.
+ */
 final class HelloWorld {
   public static void main(String[] args) {
     // Run with four places unless specified otherwise

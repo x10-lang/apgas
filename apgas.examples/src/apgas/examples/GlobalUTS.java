@@ -23,9 +23,52 @@ import apgas.Configuration;
 import apgas.Place;
 import apgas.util.PlaceLocalObject;
 
+/**
+ * This class implements a lifeline-based global load balanced implementation of
+ * the Unbalanced Tree Search (UTS) problem. Class {@link GlobalUTS} specifies
+ * the behavior of each computation place and how/when work is transferred
+ * (stolen) from one place to an other.
+ * <p>
+ * The tasks to be performed at each {@link GlobalUTS} is kept in a {@link UTS}
+ * instance : {@link #bag}. This allows for easy splitting/merging the task bag
+ * when a thief is given work by a place.
+ * <p>
+ * While the place has work, it performs 500 iterations of its work before
+ * dealing with potential thieves. A thief can be of one of two kinds : random
+ * thief or lifeline thief.
+ * <ul>
+ * <li>A random thief is a thief which has just run out of work. It then
+ * randomly chooses one place to steal work from. If work was stolen, it
+ * processes it. If not, it switches to the lifeline thieving scheme.
+ * <li>A lifeline thief signals its presence to a place before halting. If the
+ * place has work to share, it will wake up the place and give it some work when
+ * if it has any.
+ * </ul>
+ * <p>
+ * In the random thieving procedure, a place to steal work from is chosen at
+ * random using a uniform distribution (each place has as much chance to be
+ * selected as any other). The implementation uses the
+ * {@link Random#nextInt(int)} pseudo-random algorithm. To avoid generating the
+ * same sequence of random numbers (therefore the same order of places to steal
+ * from) for all the places, the place identification number - unique to the
+ * places - is used as seed. When a thief asks for work while the place is
+ * performing computation, it is kept in the waiting queue {@link #thieves}
+ * until this queue is processed by the {@link #distribute()} process.
+ * <p>
+ * The lifeline strategy used in this implementation consists in establishing a
+ * directed loop containing all the places. Each place branches to a unique
+ * other place for its lifeline ; each place potentially has (at most) one place
+ * asking for work with its lifeline. The presence of a lifeline thief requiring
+ * work from this place is signaled by the {@link #lifeline} boolean : as the
+ * lifeline loop connects the places by their id's, for any given place the
+ * unique potential thief is clearly identified. If a different strategy was
+ * used, storing the lifeline thieves's id might be necessary.
+ *
+ * @see apgas.examples.UTS
+ */
 final class GlobalUTS extends PlaceLocalObject {
 
-  /** Brings the APGAS place to the class */
+  /** Brings the APGAS place id to the class {@link GlobalUTS} */
   final Place home = here();
 
   /** Number of places available for the computation */
@@ -65,14 +108,15 @@ final class GlobalUTS extends PlaceLocalObject {
   final AtomicBoolean lifeline = new AtomicBoolean(home.id != places - 1);
 
   /**
-   * Indicates the state of the place
+   * Indicates the state of the place at any given time.
    * <ul>
    * <li><em>-2</em> : inactive
    * <li><em>-1</em> : running
    * <li><em>p</em> in range [0,{@code places}] : stealing from place of id
    * <em>p</em>
    * </ul>
-   * At initialization, is in inactive state.
+   * At initialization, is in inactive state. Due to race conditions, it has to
+   * be protected at each read/write.
    */
   int state = -2;
 
@@ -312,6 +356,12 @@ final class GlobalUTS extends PlaceLocalObject {
     }
   }
 
+  /**
+   * Resets the computation place.
+   * <p>
+   * Allows the computation places to be kept for an other computation without
+   * having to set them up again.
+   */
   public void reset() {
     bag.count = 0;
     lifeline.set(home.id != places - 1);

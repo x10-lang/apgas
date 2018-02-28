@@ -19,10 +19,11 @@ import apgas.GlobalRuntime;
  * Implements a five-point Laplacian 2D array stencil, similar to the
  * HeatTransfer example from the X10 2.1 tutorial
  *
+ * @see <a target="_blank" href=
+ *      "http://x10.sourceforge.net/tutorials/x10-2.1/SC_2010/SC10_tut143_X10_Tutorial_final_v3.html">http://x10.sourceforge.net/tutorials/x10-2.1/SC_2010/SC10_tut143_X10_Tutorial_final_v3.html</a>
+ */
+/*
  * TODO global reduction over maxDelta
- *
- * @see http://x10.sourceforge.net/tutorials/x10-2.1/SC_2010/
- *      SC10_tut143_X10_Tutorial_final_v3.html
  */
 public class Heat {
   final static double EPSILON = 1.0e-5;

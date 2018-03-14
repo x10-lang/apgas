@@ -25,7 +25,12 @@ public final class GLBProcessor extends PlaceLocalObject
     implements TaskProcessor {
 
   /** Number of tasks to process before responding to thieves */
-  private static final int WORK_UNIT = 40;
+  private static final int DEFAULT_WORK_UNIT = 40;
+
+  /**
+   * Number of attempted random steals before the place skips to its lifeline
+   */
+  private static final int DEFAULT_RANDOM_STEAL_ATTEMPTS = 1;
 
   /**
    * Collection of tasks to be processed
@@ -68,6 +73,12 @@ public final class GLBProcessor extends PlaceLocalObject
    * @see #lifelinedeal(TaskQueue)
    */
   private final AtomicBoolean lifeline = new AtomicBoolean(false);
+
+  /** Number of random steal attempts performed by this place */
+  private final int RANDOM_STEAL_ATTEMPTS;
+
+  /** Number of task processed by this place before dealing with thieves */
+  private final int WORK_UNIT;
 
   /**
    * Indicates the state of the place at any given time.
@@ -242,8 +253,15 @@ public final class GLBProcessor extends PlaceLocalObject
         System.err.println(home + " distributing");
         distribute();
       }
-      System.err.println(home + " stealing");
-      steal();
+
+      // Perform a certain number of steals attempts
+      int attempts = RANDOM_STEAL_ATTEMPTS;
+      while (attempts > 0 && tasks.isEmpty()) {
+        attempts--;
+        System.err.println(home + " stealing");
+        steal();
+      }
+
     }
 
     synchronized (this) {
@@ -320,6 +338,8 @@ public final class GLBProcessor extends PlaceLocalObject
 
   /**
    * Factory method for GLBProcessor
+   * <p>
+   * This yields a GLBProcessor using default configuration.
    *
    * @return a new computing instance
    */
@@ -329,14 +349,17 @@ public final class GLBProcessor extends PlaceLocalObject
     }
 
     final GLBProcessor glb = PlaceLocalObject.make(places(),
-        () -> new GLBProcessor());
+        () -> new GLBProcessor(DEFAULT_WORK_UNIT,
+            DEFAULT_RANDOM_STEAL_ATTEMPTS));
     return glb;
   }
 
   /**
    * Private Constructor
    */
-  private GLBProcessor() {
+  private GLBProcessor(int workUnit, int randomStealAttempts) {
     tasks = new TaskQueue();
+    WORK_UNIT = workUnit;
+    RANDOM_STEAL_ATTEMPTS = randomStealAttempts;
   }
 }

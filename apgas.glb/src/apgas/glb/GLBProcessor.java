@@ -33,6 +33,11 @@ public final class GLBProcessor extends PlaceLocalObject
   private static final int DEFAULT_RANDOM_STEAL_ATTEMPTS = 1;
 
   /**
+   * Default number of places on which the computation is going to take place
+   */
+  private static final String DEFAULT_PLACE_COUNT = "4";
+
+  /**
    * Collection of tasks to be processed
    * <p>
    * The tasks are processed from the top of the queue by
@@ -337,7 +342,7 @@ public final class GLBProcessor extends PlaceLocalObject
   }
 
   /**
-   * Factory method for GLBProcessor
+   * Creates a GLBProcessor (factory method)
    * <p>
    * This yields a GLBProcessor using default configuration.
    *
@@ -345,12 +350,40 @@ public final class GLBProcessor extends PlaceLocalObject
    */
   public static GLBProcessor GLBProcessorFactory() {
     if (System.getProperty(Configuration.APGAS_PLACES) == null) {
-      System.setProperty(Configuration.APGAS_PLACES, "4");
+      System.setProperty(Configuration.APGAS_PLACES, DEFAULT_PLACE_COUNT);
     }
 
     final GLBProcessor glb = PlaceLocalObject.make(places(),
         () -> new GLBProcessor(DEFAULT_WORK_UNIT,
             DEFAULT_RANDOM_STEAL_ATTEMPTS));
+    return glb;
+  }
+
+  /**
+   * Creates a GLBProcessor (factory method)
+   * <p>
+   * The returned GLBProcessor will follow the provided configuration,
+   * specifically it will perform {@code workUnit} {@link Task} in its
+   * {@link TaskQueue} before taking care of potential thieves. When the place
+   * runs out of {@link Task}, it performs {@code stealAttempts} attempts to
+   * steal work from other places before setting up its lifeline and halting.
+   *
+   * @param workUnit
+   *          number of {@link Task}s processed by a place before dealing with
+   *          thieves, strictly positive
+   * @param stealAttempts
+   *          number of steal attempt performed by a place before halting,
+   *          positive or nil
+   * @return a new computing instance
+   */
+  public static GLBProcessor GLBProcessorFactory(int workUnit,
+      int stealAttempts) {
+    if (System.getProperty(Configuration.APGAS_PLACES) == null) {
+      System.setProperty(Configuration.APGAS_PLACES, DEFAULT_PLACE_COUNT);
+    }
+
+    final GLBProcessor glb = PlaceLocalObject.make(places(),
+        () -> new GLBProcessor(workUnit, stealAttempts));
     return glb;
   }
 

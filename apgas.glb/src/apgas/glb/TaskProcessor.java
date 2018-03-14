@@ -10,7 +10,7 @@ package apgas.glb;
  * @author Patrick Finnerty
  *
  */
-interface TaskProcessor {
+public interface TaskProcessor {
 
   /**
    * Allows callers to add a task to be performed by the {@link TaskProcessor}.

@@ -268,7 +268,7 @@ public final class GLBProcessor extends PlaceLocalObject
           if (t instanceof FoldTask) {
             fold((FoldTask) t);
           } else {
-            t.process();
+            ((ForkTask) t).process();
           }
         }
         System.err.println(home + " distributing");

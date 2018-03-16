@@ -92,7 +92,7 @@ class TaskQueue implements Serializable {
   /**
    * Gives the first Task in the {@link TaskQueue} without removing it from the
    * TaskQueue
-   * 
+   *
    * @return the first Task in the Queue or null if the Queue is empty
    */
   public Task peep() {

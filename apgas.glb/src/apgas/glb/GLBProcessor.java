@@ -99,6 +99,17 @@ public final class GLBProcessor extends PlaceLocalObject
   private int state = -2;
 
   /**
+   * Indicates if this place is performing a fold and keeps a fold out of its
+   * tasks queue
+   */
+  private boolean folding = false;
+
+  /**
+   *
+   */
+  private FoldTask fold = null;
+
+  /**
    * Yields back some work in response to a {@link #steal()}
    * <p>
    * Merges the proposed work {@code q} into this place's {@link #tasks} and
@@ -112,8 +123,8 @@ public final class GLBProcessor extends PlaceLocalObject
    *          the work given by place {@code p}, possibly <code>null</code>.
    */
   private synchronized void deal(Place p, TaskQueue q) {
-    // We are presumably receiving work place p. Therefore this place should be
-    // in state 'p'.
+    // We are presumably receiving work from place p. Therefore this place
+    // should be in state 'p'.
     assert state == p.id;
 
     // If place p couldn't share work with this place, the given q is null. A
@@ -253,7 +264,12 @@ public final class GLBProcessor extends PlaceLocalObject
       while (!tasks.isEmpty()) {
         System.err.println(home + " process");
         for (int n = WORK_UNIT; (n > 0) && (!tasks.isEmpty()); --n) {
-          tasks.pop().process();
+          final Task t = tasks.pop();
+          if (t instanceof FoldTask) {
+            fold((FoldTask) t);
+          } else {
+            t.process();
+          }
         }
         System.err.println(home + " distributing");
         distribute();
@@ -274,8 +290,30 @@ public final class GLBProcessor extends PlaceLocalObject
     }
     distribute();
 
+    if (folding && home.id != 0) {
+      // Send the work to 0
+      folding = false;
+      asyncAt(place(0), () -> fold(fold));
+    }
+
     lifelinesteal();
     System.err.println(home + " stopping");
+  }
+
+  /**
+   * Folds the foldTasks
+   *
+   * @param t
+   *          the {@link FoldTask} to fold
+   */
+  private synchronized void fold(FoldTask t) {
+    // Check if we have a folding task already
+    if (folding) {
+      fold.process(t);
+    } else {
+      fold = t;
+      folding = true;
+    }
   }
 
   /**
@@ -339,6 +377,16 @@ public final class GLBProcessor extends PlaceLocalObject
         asyncAt(p, this::run);
       }
     });
+  }
+
+  /**
+   * Gives the result of the computation, possibly null if no FoldTask were
+   * created or used in the computation.
+   *
+   * @return the final {@link FoldTask} if there were any.
+   */
+  public FoldTask result() {
+    return fold;
   }
 
   /**

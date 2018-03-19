@@ -24,7 +24,7 @@ import java.util.NoSuchElementException;
 class TaskQueue implements Serializable {
 
   /** Default size of the array {@link #tasks} containing the tasks */
-  private static final int QUEUE_SIZE = 100;
+  public static final int QUEUE_SIZE = 10;
 
   /** Serial Version UID */
   private static final long serialVersionUID = 1257150853488353701L;
@@ -48,22 +48,21 @@ class TaskQueue implements Serializable {
    */
   public void add(Task t) {
     tasks[lastIndex] = t;
-    final int nextLastIndex = (lastIndex + 1) % tasks.length;
+    lastIndex = (lastIndex + 1) % tasks.length;
 
-    if (nextLastIndex == firstIndex) {
+    if (lastIndex == firstIndex) {
       // Overflow problem, the array is full
       int newLast = 0;
       final Task newTaskArray[] = new Task[tasks.length + QUEUE_SIZE];
-      while (!isEmpty()) {
+      do {
         newTaskArray[newLast] = pop();
         newLast++;
-      }
+      } while (!isEmpty());
       firstIndex = 0;
       lastIndex = newLast;
       tasks = newTaskArray;
       return;
     }
-    lastIndex = nextLastIndex;
   }
 
   /**

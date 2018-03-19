@@ -72,12 +72,14 @@ public final class GLBProcessor extends PlaceLocalObject
    * <p>
    * In the current implementation, as each place has a unique potential
    * lifeline thief, a boolean value is enough. If there were multiple potential
-   * thiefs, storing the id of the thieves would be necessary.
+   * thiefs, storing the id of the thieves would be necessary. By initializing
+   * the value at `home.id != 3` we position every place as waiting for work
+   * from its lifeline except place 0.
    *
    * @see #lifelinesteal()
    * @see #lifelinedeal(TaskQueue)
    */
-  private final AtomicBoolean lifeline = new AtomicBoolean(false);
+  private final AtomicBoolean lifeline = new AtomicBoolean(home.id != 3);
 
   /** Number of random steal attempts performed by this place */
   private final int RANDOM_STEAL_ATTEMPTS;
@@ -292,6 +294,7 @@ public final class GLBProcessor extends PlaceLocalObject
 
     if (folding && home.id != 0) {
       // Send the work to 0
+      System.err.println(home + " sending");
       folding = false;
       asyncAt(place(0), () -> fold(fold));
     }
@@ -373,9 +376,7 @@ public final class GLBProcessor extends PlaceLocalObject
   /** Launches the computation of the given work */
   public void launchComputation() {
     finish(() -> {
-      for (final Place p : places()) {
-        asyncAt(p, this::run);
-      }
+      run();
     });
   }
 

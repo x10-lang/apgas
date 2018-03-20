@@ -296,7 +296,8 @@ public final class GLBProcessor extends PlaceLocalObject
       // Send the work to 0
       System.err.println(home + " sending");
       folding = false;
-      asyncAt(place(0), () -> fold(fold));
+      final FoldTask f = fold;
+      asyncAt(place(0), () -> fold(f));
     }
 
     lifelinesteal();
@@ -304,7 +305,9 @@ public final class GLBProcessor extends PlaceLocalObject
   }
 
   /**
-   * Folds the foldTasks
+   * Folds the foldTasks given as parameter in this GLBProcessor's fold. As this
+   * method is called with asyncAt from other places in the
+   * {@link GLBProcessor#run()} routine, it is protected by a synchronized
    *
    * @param t
    *          the {@link FoldTask} to fold
@@ -312,11 +315,16 @@ public final class GLBProcessor extends PlaceLocalObject
   private synchronized void fold(FoldTask t) {
     // Check if we have a folding task already
     if (folding) {
+      if (fold == t) {
+        return;
+      }
+      // assert fold != t;
       fold.process(t);
     } else {
       fold = t;
       folding = true;
     }
+
   }
 
   /**

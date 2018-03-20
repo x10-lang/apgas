@@ -37,14 +37,12 @@ public class GLBProcessorTest {
    */
   @Test
   public void testSum2Tasks() {
-    final Sum s = new Sum(1);
-
     // We use a very low work unit to make steals happen often
     final GLBProcessor p = GLBProcessor.GLBProcessorFactory(1, 1);
 
     // Adding two tasks sum of 1 and 1 should yield 2.
-    p.addTask(s);
-    p.addTask(s.copy());
+    p.addTask(new Sum(1));
+    p.addTask(new Sum(1));
 
     p.launchComputation();
 
@@ -61,7 +59,7 @@ public class GLBProcessorTest {
   }
 
   /**
-   * Tests the merging sum of 50 sum elements of initial value 1
+   * Tests the merging sum of 250 sum elements of initial value 1
    */
   @Test
   public void testSum250Tasks() {
@@ -100,7 +98,7 @@ public class GLBProcessorTest {
     p.addTask(s);
 
     for (int i = 1; i < nbSum; i++) {
-      p.addTask(s.copy());
+      p.addTask(new Sum(1));
     }
 
     p.launchComputation();
@@ -164,15 +162,6 @@ public class GLBProcessorTest {
     public void process(FoldTask t) {
       sum += ((Sum) t).sum;
 
-    }
-
-    /**
-     * Creates a new instance of {@code this} with the same value for the sum.
-     *
-     * @return a new instance with identical sum value
-     */
-    public Sum copy() {
-      return new Sum(sum);
     }
 
     /**

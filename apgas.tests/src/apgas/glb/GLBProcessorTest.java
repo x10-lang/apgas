@@ -65,7 +65,7 @@ public class GLBProcessorTest {
    */
   @Test
   public void testSum250Tasks() {
-    sum(250, 5);
+    sum(250, 10);
   }
 
   /**

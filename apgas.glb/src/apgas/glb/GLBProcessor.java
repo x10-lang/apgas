@@ -102,12 +102,12 @@ public final class GLBProcessor extends PlaceLocalObject
 
   /**
    * Indicates if this place is performing a fold and keeps a fold out of its
-   * tasks queue
+   * tasks queue in field {@link #fold}.
    */
   private boolean folding = false;
 
   /**
-   *
+   * FoldTask kept out of the task queue to fold the results as they come in.
    */
   private FoldTask fold = null;
 
@@ -307,7 +307,7 @@ public final class GLBProcessor extends PlaceLocalObject
   /**
    * Folds the foldTasks given as parameter in this GLBProcessor's fold. As this
    * method is called with asyncAt from other places in the
-   * {@link GLBProcessor#run()} routine, it is protected by a synchronized
+   * {@link GLBProcessor#run()} routine, it is protected with synchronized.
    *
    * @param t
    *          the {@link FoldTask} to fold
@@ -315,16 +315,11 @@ public final class GLBProcessor extends PlaceLocalObject
   private synchronized void fold(FoldTask t) {
     // Check if we have a folding task already
     if (folding) {
-      if (fold == t) {
-        return;
-      }
-      // assert fold != t;
       fold.process(t);
     } else {
       fold = t;
       folding = true;
     }
-
   }
 
   /**

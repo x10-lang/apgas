@@ -12,7 +12,10 @@ package apgas.glb;
 interface Task {
   /**
    * Allows {@link TaskProcessor}s to claim this task as their own, enabling the
-   * task to call it if need be. Actually storing the given parameter
+   * task to call it if need be. Storing the given parameter is up to the task
+   * to determine if it is needed. If the procedures do not need the
+   * {@link TaskProcessor} in their computation, the method should be left
+   * empty.
    *
    * @param p
    *          the {@link TaskProcessor} to set.

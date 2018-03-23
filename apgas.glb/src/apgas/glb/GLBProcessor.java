@@ -128,7 +128,7 @@ public final class GLBProcessor extends PlaceLocalObject
     // We are presumably receiving work from place p. Therefore this place
     // should be in state 'p'.
     assert state == p.id;
-
+    System.err.println(home + " stealing from " + p);
     // If place p couldn't share work with this place, the given q is null. A
     // check is therefore necessary.
     if (q != null) {
@@ -219,6 +219,8 @@ public final class GLBProcessor extends PlaceLocalObject
    *           thrown by {@link #run()}
    */
   private void lifelinedeal(TaskQueue q) throws DigestException {
+    System.err.println(home + " waking up");
+
     q.setProcessor(this);
     tasks.merge(q);
     run();
@@ -264,16 +266,15 @@ public final class GLBProcessor extends PlaceLocalObject
     while (!tasks.isEmpty()) {
 
       while (!tasks.isEmpty()) {
-        System.err.println(home + " process");
-        for (int n = WORK_UNIT; (n > 0) && (!tasks.isEmpty()); --n) {
+        for (int n = 0; (n < WORK_UNIT) && (!tasks.isEmpty());) {
           final Task t = tasks.pop();
           if (t instanceof FoldTask) {
             fold((FoldTask) t);
           } else {
             ((ForkTask) t).process();
           }
+          n += t.getWeight();
         }
-        System.err.println(home + " distributing");
         distribute();
       }
 
@@ -281,7 +282,6 @@ public final class GLBProcessor extends PlaceLocalObject
       int attempts = RANDOM_STEAL_ATTEMPTS;
       while (attempts > 0 && tasks.isEmpty()) {
         attempts--;
-        System.err.println(home + " stealing");
         steal();
       }
 
@@ -294,7 +294,6 @@ public final class GLBProcessor extends PlaceLocalObject
 
     if (folding && home.id != 0) {
       // Send the work to 0
-      System.err.println(home + " sending");
       folding = false;
       final FoldTask f = fold;
       asyncAt(place(0), () -> fold(f));

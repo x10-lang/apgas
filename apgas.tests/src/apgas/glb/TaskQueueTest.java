@@ -23,7 +23,7 @@ public class TaskQueueTest {
   static private SomeTask a, b, c;
 
   /**
-   * Initialises three Task to be used for TaskQueue testing
+   * Initializes three Task to be used for TaskQueue testing
    */
   @BeforeClass
   public static void setup() {
@@ -248,6 +248,18 @@ public class TaskQueueTest {
      */
     public TaskProcessor getTaskProcessor() {
       return processor;
+    }
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see apgas.glb.Task#getWeight()
+     */
+    @Override
+    public int getWeight() {
+      // A 0 weight would probably be wrong but as we are not performing any
+      // computation it does not hurt.
+      return 0;
     }
 
   }

@@ -174,6 +174,16 @@ public class GLBProcessorTest {
       sum = a;
     }
 
+    /*
+     * (non-Javadoc)
+     * 
+     * @see apgas.glb.Task#getWeight()
+     */
+    @Override
+    public int getWeight() {
+      return 1;
+    }
+
   }
 
   /**
@@ -222,6 +232,16 @@ public class GLBProcessorTest {
      */
     public Min(int a) {
       min = a;
+    }
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see apgas.glb.Task#getWeight()
+     */
+    @Override
+    public int getWeight() {
+      return 1;
     }
   }
 }

@@ -5,7 +5,8 @@ package apgas.glb;
 
 import static apgas.Constructs.*;
 
-import java.security.DigestException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -17,18 +18,25 @@ import apgas.util.PlaceLocalObject;
 /**
  * GLBProcessor proposes a simple API to request for work to be computed using
  * the lifeline based global load balancing framework proposed by APGAS.
+ * <p>
+ * Initial {@link TaskBag}s to be processed can be added to this instance by
+ * calling {@link #addTaskBag(TaskBag)}. Computation is launched using the
+ * {@link #compute()} method. If the programmer wishes to use same computing
+ * instance for several successive calculation, method {@link #reset()} should
+ * be called before adding the new {@link TaskBag}s to be processed.
  *
  * @author Patrick Finnerty
  *
  */
 public final class GLBProcessor extends PlaceLocalObject
-    implements TaskProcessor {
+    implements TaskBagProcessor {
 
-  /** Number of tasks to process before responding to thieves */
+  /** Default number of tasks to process before responding to thieves */
   private static final int DEFAULT_WORK_UNIT = 40;
 
   /**
    * Number of attempted random steals before the place skips to its lifeline
+   * steal strategy
    */
   private static final int DEFAULT_RANDOM_STEAL_ATTEMPTS = 1;
 
@@ -37,14 +45,13 @@ public final class GLBProcessor extends PlaceLocalObject
    */
   private static final String DEFAULT_PLACE_COUNT = "4";
 
-  /**
-   * Collection of tasks to be processed
-   * <p>
-   * The tasks are processed from the top of the queue by
-   * {@link TaskQueue#pop()}. When a steal occurs, they are removed from the
-   * bottom of the queue using {@link TaskQueue#split()}
-   */
-  private final TaskQueue tasks;
+  /** Bag of tasks to be processed */
+  @SuppressWarnings("rawtypes")
+  private final Map<String, TaskBag> bagsToDo;
+
+  /** Bag of task that have been processed */
+  @SuppressWarnings("rawtypes")
+  private final Map<String, TaskBag> bagsDone;
 
   /** Brings the APGAS place id to the class {@link GLBProcessor} */
   private final Place home = here();
@@ -77,7 +84,7 @@ public final class GLBProcessor extends PlaceLocalObject
    * from its lifeline except place 0.
    *
    * @see #lifelinesteal()
-   * @see #lifelinedeal(TaskQueue)
+   * @see #lifelinedeal(TaskBag)
    */
   private final AtomicBoolean lifeline = new AtomicBoolean(home.id != 3);
 
@@ -101,82 +108,102 @@ public final class GLBProcessor extends PlaceLocalObject
   private int state = -2;
 
   /**
-   * Indicates if this place is performing a fold and keeps a fold out of its
-   * tasks queue in field {@link #fold}.
+   * Puts this local place to a ready to compute state.
    */
-  private boolean folding = false;
-
-  /**
-   * FoldTask kept out of the task queue to fold the results as they come in.
-   */
-  private FoldTask fold = null;
+  private void clear() {
+    thieves.clear();
+    lifeline.set(home.id != 3);
+    state = -2;
+    bagsToDo.clear();
+    bagsDone.clear();
+  }
 
   /**
    * Yields back some work in response to a {@link #steal()}
    * <p>
-   * Merges the proposed work {@code q} into this place's {@link #tasks} and
-   * wakes up the waiting thread in the {@link #steal()} procedure. This will in
-   * turn make this place check its {@link #tasks} for any work and either
-   * process the given work or switch to the lifeline steal procedure.
+   * Merges the proposed {@link TaskBag} {@code gift} into this place's
+   * corresponding type {@link TaskBag} if any and puts it into
+   * {@link #bagsToDo} before waking up the waiting thread in the
+   * {@link #steal()} procedure. This will in turn make this place check its
+   * {@link #bagsToDo} for any work and either process the given work or switch
+   * to the lifeline steal procedure.
    *
+   * @param <B>
+   *          the type of gift given
    * @param p
    *          the place where the work is originating from
-   * @param q
+   * @param gift
    *          the work given by place {@code p}, possibly <code>null</code>.
    */
-  private synchronized void deal(Place p, TaskQueue q) {
+  @SuppressWarnings("unchecked")
+  private synchronized <B extends TaskBag<B>> void deal(Place p, B gift) {
     // We are presumably receiving work from place p. Therefore this place
     // should be in state 'p'.
     assert state == p.id;
-    System.err.println(home + " stealing from " + p);
     // If place p couldn't share work with this place, the given q is null. A
     // check is therefore necessary.
-    if (q != null) {
-      q.setProcessor(this);
-      tasks.merge(q);
+    if (gift != null) {
+      B d = (B) bagsDone.remove(gift.getClass().getName()); // Possibly
+                                                            // null
+      if (d != null) {
+        d.merge(gift);
+      } else {
+        d = gift;
+      }
+      d.setProcessor(this);
+
+      bagsToDo.put(gift.getClass().getName(), d);
     }
     // Switch back to 'running' state.
     state = -1;
-
     // Wakes up the halted thread in 'steal' procedure.
     notifyAll();
   }
 
   /**
-   * Processes the random thieves and the lifeline thieves asking for work from
-   * this place.
+   * Distributes {@link TaskBag}s to the random thieves and the lifeline thieves
+   * asking for work from this place.
    * <p>
-   * Splits this place's {@link #tasks} and {@link #deal(Place, TaskQueue)}s
-   * with random thieves before {@link #lifelinedeal(TaskQueue)}ing with the
-   * lifeline thieves.
+   * Splits this place's {@link #bagsToDo} and {@link #deal(Place, TaskBag)}s
+   * with random thieves before {@link GLBProcessor#lifelinedeal(TaskBag)}ing
+   * with the lifeline thieves.
+   *
+   * @param <B>the
+   *          type of offered work given to thieves
    */
-  private void distribute() {
+  private <B extends TaskBag<B>> void distribute() {
     if (places == 1) {
       return;
     }
     Place p;
     while ((p = thieves.poll()) != null) {
-      final TaskQueue b = tasks.split();
+      final String key = bagsToDo.keySet().iterator().next();
+      final TaskBag<?> bag = bagsToDo.get(key);
+      @SuppressWarnings("unchecked")
+      final B toGive = (B) bag.split();
       final Place h = home;
       uncountedAsyncAt(p, () -> {
-        deal(h, b);
+        deal(h, toGive);
       });
     }
-    if (!tasks.isEmpty() && lifeline.get()) {
-      final TaskQueue b = tasks.split();
-      if (b != null) {
+    if (!bagsToDo.isEmpty() && lifeline.get()) {
+      final String key = bagsToDo.keySet().iterator().next();
+      final TaskBag<?> bag = bagsToDo.get(key);
+      @SuppressWarnings("unchecked")
+      final B toGive = (B) bag.split();
+      if (toGive != null) {
         p = place((home.id + 1) % places);
         lifeline.set(false);
         asyncAt(p, () -> {
-          lifelinedeal(b);
+          lifelinedeal(toGive);
         });
       }
     }
   }
 
   /**
-   * Registers this {@code GlobalUTS} as asking for work at its (remote)
-   * lifeline {@code GlobalUTS} places. If there is only one place, has no
+   * Registers this {@code GLBProcessor} as asking for work from its (remote)
+   * lifeline {@code GLBProcessor} place. If there is only one place, has no
    * effect.
    * <p>
    * The lifeline strategy in the current implementation consists in a single
@@ -213,16 +240,22 @@ public final class GLBProcessor extends PlaceLocalObject
    * <p>
    * Only makes sense if this place is in inactive {@link #state}.
    *
+   * @param <B>the
+   *          type of the given {@link TaskBag}
+   *
    * @param q
    *          the work to be given to the place
-   * @throws DigestException
-   *           thrown by {@link #run()}
    */
-  private void lifelinedeal(TaskQueue q) throws DigestException {
-    System.err.println(home + " waking up");
-
-    q.setProcessor(this);
-    tasks.merge(q);
+  @SuppressWarnings("unchecked")
+  private synchronized <B extends TaskBag<B>> void lifelinedeal(B q) {
+    if (q != null) {
+      final B d = (B) bagsDone.remove(q.getClass().getName()); // Possibly null
+      if (d != null) {
+        q.merge(d);
+      }
+      q.setProcessor(this);
+      bagsToDo.put(q.getClass().getName(), q);
+    }
     run();
   }
 
@@ -234,7 +267,7 @@ public final class GLBProcessor extends PlaceLocalObject
    * queue which will be processed when it performs a certain number of
    * iterations. If this place is not working, i.e. is trying to steal work
    * (randomly or through a lifeline), asynchronously
-   * {@link #deal(Place, TaskQueue)} {@code null} work.
+   * {@link #deal(Place, TaskBag)} {@code null} work.
    *
    * @param p
    *          The place asking for work
@@ -243,8 +276,8 @@ public final class GLBProcessor extends PlaceLocalObject
     synchronized (this) {
       // If the place is currently performing computation, adds the thief to its
       // list of pending thief.
-      // The work will be shared when this place stops running 'expand' in the
-      // main 'run' loop by the first 'distribute' call.
+      // The work will be shared when this place stops processing its tasks in
+      // the main 'run' loop by the first 'distribute' call.
       if (state == -1) {
         thieves.add(p);
         return;
@@ -256,76 +289,70 @@ public final class GLBProcessor extends PlaceLocalObject
     });
   }
 
-  private void run() throws DigestException {
+  /**
+   * Main computation procedure.
+   * <p>
+   * Processes WORK_UNIT's worth of task in its bagsToDo before answering to
+   * potential thief (method {@link #distribute()}. When it runs out of task
+   * bags to process, attempts a certain number of steals on other workers
+   * (method {@link #request(Place)}). If successfull in its steals, processes
+   * the given tasks. If not answers to thieves that might have had the time to
+   * put in a request between two attempted steals before establishing its
+   * lifeline and stopping. This procedure can be called again if the lifeline
+   * steal is successful : the place offering the work will call the
+   * {@link #run()} method on this place via {@link #lifelinedeal(TaskBag)}
+   */
+  private void run() {
     System.err.println(home + " starting");
 
     synchronized (this) {
       state = -1;
     }
+    while (!bagsToDo.isEmpty()) {
+      while (!bagsToDo.isEmpty()) {
+        final String key = bagsToDo.keySet().iterator().next();
+        final TaskBag<?> bag = bagsToDo.get(key);
 
-    while (!tasks.isEmpty()) {
+        bag.process(WORK_UNIT);
 
-      while (!tasks.isEmpty()) {
-        for (int n = 0; (n < WORK_UNIT) && (!tasks.isEmpty());) {
-          final Task t = tasks.pop();
-          if (t instanceof FoldTask) {
-            fold((FoldTask) t);
-          } else {
-            ((ForkTask) t).process();
-          }
-          n += t.getWeight();
+        if (bag.isEmpty()) {
+          bagsToDo.remove(key);
+          bagsDone.put(key, bag);
         }
         distribute();
       }
 
-      // Perform a certain number of steals attempts
+      // Perform steals attempts
       int attempts = RANDOM_STEAL_ATTEMPTS;
-      while (attempts > 0 && tasks.isEmpty()) {
+      while (attempts > 0 && bagsToDo.isEmpty()) {
         attempts--;
         steal();
       }
-
     }
 
     synchronized (this) {
       state = -2;
     }
-    distribute();
 
-    if (folding && home.id != 0) {
-      // Send the work to 0
-      folding = false;
-      final FoldTask f = fold;
-      asyncAt(place(0), () -> fold(f));
+    // Sending null work to all the thieves
+    Place p;
+    final Place h = home;
+    while ((p = thieves.poll()) != null) {
+      uncountedAsyncAt(p, () -> {
+        deal(h, null);
+      });
     }
 
+    // Establishing lifeline
     lifelinesteal();
     System.err.println(home + " stopping");
-  }
-
-  /**
-   * Folds the foldTasks given as parameter in this GLBProcessor's fold. As this
-   * method is called with asyncAt from other places in the
-   * {@link GLBProcessor#run()} routine, it is protected with synchronized.
-   *
-   * @param t
-   *          the {@link FoldTask} to fold
-   */
-  private synchronized void fold(FoldTask t) {
-    // Check if we have a folding task already
-    if (folding) {
-      fold.process(t);
-    } else {
-      fold = t;
-      folding = true;
-    }
   }
 
   /**
    * Attempts to steal work to a randomly chosen place. Will halt the process
    * until the target place answers (whether it indeed gave work or not).
    */
-  private void steal() {
+  private synchronized void steal() {
     if (places == 1) {
       // No other place exists, "this" is the only one.
       // Cannot perform a steal.
@@ -364,32 +391,38 @@ public final class GLBProcessor extends PlaceLocalObject
     }
   }
 
-  /*
-   * (non-Javadoc)
-   *
-   * @see glb.TaskProcessor#addTask(tasks.Task)
-   */
+  @SuppressWarnings("unchecked")
   @Override
-  public void addTask(Task t) {
-    t.setTaskProcessor(this);
-    tasks.add(t);
+  public <B extends TaskBag<B>> void addTaskBag(B b) {
+    final B done = (B) bagsToDo.remove(b.getClass().getName());
+    if (done != null) {
+      b.merge(done);
+    }
+    final B toDo = (B) bagsDone.remove(b.getClass().getName());
+    if (toDo != null) {
+      b.merge(toDo);
+    }
+    b.setProcessor(this);
+    bagsToDo.put(b.getClass().getName(), b);
   }
 
   /** Launches the computation of the given work */
-  public void launchComputation() {
+  public void compute() {
     finish(() -> {
       run();
     });
   }
 
   /**
-   * Gives the result of the computation, possibly null if no FoldTask were
-   * created or used in the computation.
-   *
-   * @return the final {@link FoldTask} if there were any.
+   * Clears the {@link GLBProcessor} of all its tasks and results and prepares
+   * it for a new computation.
    */
-  public FoldTask result() {
-    return fold;
+  public void reset() {
+    finish(() -> {
+      for (final Place p : places()) {
+        asyncAt(p, () -> clear());
+      }
+    });
   }
 
   /**
@@ -398,6 +431,7 @@ public final class GLBProcessor extends PlaceLocalObject
    * This yields a GLBProcessor using default configuration.
    *
    * @return a new computing instance
+   * @see #GLBProcessorFactory(int, int)
    */
   public static GLBProcessor GLBProcessorFactory() {
     if (System.getProperty(Configuration.APGAS_PLACES) == null) {
@@ -413,18 +447,20 @@ public final class GLBProcessor extends PlaceLocalObject
   /**
    * Creates a GLBProcessor (factory method)
    * <p>
-   * The returned GLBProcessor will follow the provided configuration,
-   * specifically it will perform {@code workUnit} {@link Task} in its
-   * {@link TaskQueue} before taking care of potential thieves. When the place
-   * runs out of {@link Task}, it performs {@code stealAttempts} attempts to
-   * steal work from other places before setting up its lifeline and halting.
+   * The returned GLBProcessor will follow the provided configuration that is :
+   * <ul>
+   * <li>The number of work to be processed by {@link TaskBag#process(int)}
+   * before dealing with potential thieves
+   * <li>The number of random steal attempts performed before turning to the the
+   * lifeline-steal scheme.
+   * </ul>
    *
    * @param workUnit
-   *          number of {@link Task}s processed by a place before dealing with
-   *          thieves, strictly positive
+   *          work amount processed by a place before dealing with thieves,
+   *          <em>strictly positive</em>
    * @param stealAttempts
-   *          number of steal attempt performed by a place before halting,
-   *          positive or nil
+   *          number of steal attempts performed by a place before halting,
+   *          <em>positive or nil</em>
    * @return a new computing instance
    */
   public static GLBProcessor GLBProcessorFactory(int workUnit,
@@ -440,10 +476,17 @@ public final class GLBProcessor extends PlaceLocalObject
 
   /**
    * Private Constructor
+   *
+   * @param workUnit
+   *          the amount of work to be processed before tending to thieves
+   * @param randomStealAttempts
+   *          number of random steals attempts before resaulting to the lifeline
+   *          thief scheme
    */
   private GLBProcessor(int workUnit, int randomStealAttempts) {
-    tasks = new TaskQueue();
     WORK_UNIT = workUnit;
     RANDOM_STEAL_ATTEMPTS = randomStealAttempts;
+    bagsToDo = new HashMap<>();
+    bagsDone = new HashMap<>();
   }
 }

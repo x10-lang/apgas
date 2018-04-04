@@ -7,14 +7,13 @@ This project contains the source files for the APGAS-GLB API.
 ## To Do
 By priority
 
+- [x] Allow return values from the computation, folding operations 2018/4/4
 - [ ] Implement a Lifeline strategy component (choice made possible at creation of the factory)
-- [ ] Create a balance mechanism to account for tasks of different nature such that the places can perform their steals regularly
-- [/] Allow return values from the computation / folding operations
 
 ## To keep in mind
 
 - [ ] Adapt the GLB to replicate the stream API of java.util.stream package.
-- [ ] Review the TaskQueue management, perhaps avoid massive arrays copies ?
+- [ ] Review the apgas.util.Queue management, perhaps avoid massive array copies. Should review the addTask scheme as well.
 - [ ] Multithreading the work at one place ?
 
 ## Done

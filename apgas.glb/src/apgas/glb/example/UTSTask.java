@@ -59,8 +59,8 @@ public class UTSTask implements Serializable, TaskBag<UTSTask> {
   /** Number of nodes in the bag */
   public int size = 0;
 
-  /** Number of nodes processed so far */
-  public long count = 0;
+  /** Processor in charge of computing this UTSTask */
+  private TaskBagProcessor processor = null;
 
   /**
    * Constructor
@@ -95,7 +95,8 @@ public class UTSTask implements Serializable, TaskBag<UTSTask> {
     if (size >= depth.length) {
       grow();
     }
-    ++count; // We are exploring one node (expanding its child nodes)
+    processor.fold(new Sum(1));
+    // ++count; // We are exploring one node (expanding its child nodes)
     final int offset = size * 20;
     md.digest(hash, offset, 20); // Writes onto array hash on the next 20
     // cells or bytes.
@@ -119,7 +120,8 @@ public class UTSTask implements Serializable, TaskBag<UTSTask> {
         upper[size] = n;
         size++;
       } else {
-        count += n;
+        processor.fold(new Sum(n));
+        // count += n;
       }
     }
   }
@@ -271,48 +273,6 @@ public class UTSTask implements Serializable, TaskBag<UTSTask> {
     upper = u;
   }
 
-  public static String sub(String str, int start, int end) {
-    return str.substring(start, Math.min(end, str.length()));
-  }
-
-  public static void main(String[] args) {
-    int depth = 13;
-    try {
-      depth = Integer.parseInt(args[0]);
-    } catch (final Exception e) {
-    }
-
-    final MessageDigest md = encoder();
-
-    final UTSTask taskBag = new UTSTask(64);
-    taskBag.seed(md, 19, depth - 2);
-
-    final GLBProcessor processor = GLBProcessor.GLBProcessorFactory(500, 1);
-
-    processor.addTaskBag(taskBag);
-
-    System.out.println("Warmup...");
-
-    processor.compute();
-
-    processor.reset();
-    final UTSTask secondBag = new UTSTask(64);
-    secondBag.seed(md, 19, depth);
-    processor.addTaskBag(secondBag);
-
-    System.out.println("Starting...");
-    long time = System.nanoTime();
-    processor.compute();
-
-    time = System.nanoTime() - time;
-    System.out.println("Finished.");
-
-    final long count = 264459392;
-    System.out.println("Depth: " + depth + ", Performance: " + count + "/"
-        + sub("" + time / 1e9, 0, 6) + " = "
-        + sub("" + (count / (time / 1e3)), 0, 6) + "M nodes/s");
-  }
-
   /*
    * (non-Javadoc)
    *
@@ -347,7 +307,47 @@ public class UTSTask implements Serializable, TaskBag<UTSTask> {
    */
   @Override
   public void setProcessor(TaskBagProcessor p) {
-    // Not used
+    processor = p;
   }
 
+  public static String sub(String str, int start, int end) {
+    return str.substring(start, Math.min(end, str.length()));
+  }
+
+  public static void main(String[] args) {
+    int depth = 13;
+    try {
+      depth = Integer.parseInt(args[0]);
+    } catch (final Exception e) {
+    }
+
+    final MessageDigest md = encoder();
+
+    final GLBProcessor processor = GLBProcessor.GLBProcessorFactory(500, 1);
+
+    final UTSTask taskBag = new UTSTask(64);
+    processor.addTaskBag(taskBag);
+    taskBag.seed(md, 19, depth - 2);
+
+    System.out.println("Warmup...");
+
+    processor.compute();
+
+    processor.reset();
+    final UTSTask secondBag = new UTSTask(64);
+    processor.addTaskBag(secondBag);
+    secondBag.seed(md, 19, depth);
+
+    System.out.println("Starting...");
+    long time = System.nanoTime();
+    processor.compute();
+
+    time = System.nanoTime() - time;
+    System.out.println("Finished.");
+
+    final long count = ((Sum) processor.result().toArray()[0]).sum;
+    System.out.println("Depth: " + depth + ", Performance: " + count + "/"
+        + sub("" + time / 1e9, 0, 6) + " = "
+        + sub("" + (count / (time / 1e3)), 0, 6) + "M nodes/s");
+  }
 }

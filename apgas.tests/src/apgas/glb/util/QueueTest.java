@@ -1,7 +1,7 @@
 /**
  *
  */
-package apgas.glb;
+package apgas.glb.util;
 
 import static org.junit.Assert.*;
 
@@ -11,11 +11,15 @@ import java.util.Collection;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import apgas.glb.TaskBagProcessor;
+
 /**
+ * Test class for {@link apgas.glb.util.Queue}
+ * 
  * @author Patrick Finnerty
  *
  */
-public class TaskQueueTest {
+public class QueueTest {
 
   /**
    * Tasks used to manipulate the taskqueue
@@ -23,22 +27,22 @@ public class TaskQueueTest {
   static private SomeTask a, b, c;
 
   /**
-   * Initializes three Task to be used for TaskQueue testing
+   * Initializes three Task to be used for Queue testing
    */
   @BeforeClass
   public static void setup() {
-    final TaskQueueTest t = new TaskQueueTest();
+    final QueueTest t = new QueueTest();
     a = t.new SomeTask();
     b = t.new SomeTask();
     c = t.new SomeTask();
   }
 
   /**
-   * Test method for {@link apgas.glb.TaskQueue#add(apgas.glb.Task)}.
+   * Test method for {@link apgas.glb.util.Queue#add(apgas.glb.util.Task)}.
    */
   @Test
   public void testAdd() {
-    final TaskQueue q = new TaskQueue();
+    final Queue<SomeTask> q = new Queue<>();
     q.add(a);
     assertEquals(a, q.peep());
 
@@ -55,11 +59,11 @@ public class TaskQueueTest {
   }
 
   /**
-   * Test method for {@link apgas.glb.TaskQueue#isEmpty()}.
+   * Test method for {@link apgas.glb.util.Queue#isEmpty()}.
    */
   @Test
   public void testIsEmpty() {
-    final TaskQueue t = new TaskQueue();
+    final Queue<SomeTask> t = new Queue<>();
     assert (t.isEmpty());
 
     t.add(a);
@@ -77,12 +81,12 @@ public class TaskQueueTest {
   }
 
   /**
-   * Test method for {@link apgas.glb.TaskQueue#merge(apgas.glb.TaskQueue)}.
+   * Test method for {@link apgas.glb.util.Queue#merge(Queue)}.
    */
   @Test
   public void testMerge() {
-    final TaskQueue q = new TaskQueue();
-    final TaskQueue r = new TaskQueue();
+    final Queue<SomeTask> q = new Queue<>();
+    final Queue<SomeTask> r = new Queue<>();
 
     q.add(a);
     q.add(b);
@@ -102,11 +106,11 @@ public class TaskQueueTest {
   }
 
   /**
-   * Test method for {@link apgas.glb.TaskQueue#peep()}.
+   * Test method for {@link apgas.glb.util.Queue#peep()}.
    */
   @Test
   public void testPeep() {
-    final TaskQueue q = new TaskQueue();
+    final Queue<SomeTask> q = new Queue<>();
     q.add(a);
 
     assertEquals(a, q.peep());
@@ -118,11 +122,11 @@ public class TaskQueueTest {
   }
 
   /**
-   * Test method for {@link apgas.glb.TaskQueue#pop()}.
+   * Test method for {@link apgas.glb.util.Queue#pop()}.
    */
   @Test
   public void testPop() {
-    final TaskQueue q = new TaskQueue();
+    final Queue<SomeTask> q = new Queue<>();
 
     q.add(a);
     assertEquals(a, q.pop());
@@ -136,15 +140,15 @@ public class TaskQueueTest {
   }
 
   /**
-   * Test method for {@link apgas.glb.TaskQueue#split()}.
+   * Test method for {@link apgas.glb.util.Queue#split()}.
    */
   @Test
   public void testSplit() {
-    final TaskQueue q = new TaskQueue();
+    final Queue<SomeTask> q = new Queue<>();
     q.add(a);
     q.add(b);
 
-    final TaskQueue r = q.split();
+    final Queue<SomeTask> r = q.split();
     assertEquals(2, r.size() + q.size());
 
     final Collection<Task> c = new ArrayList<>();
@@ -163,34 +167,14 @@ public class TaskQueueTest {
   }
 
   /**
-   * Test method for
-   * {@link apgas.glb.TaskQueue#setProcessor(apgas.glb.TaskProcessor)}.
-   */
-  @Test
-  public void testSetProcessor() {
-    final TaskQueue q = new TaskQueue();
-    q.add(a);
-    q.add(b);
-    q.add(c);
-
-    final TaskProcessor p = new SomeTaskProcessor();
-
-    q.setProcessor(p);
-    while (!q.isEmpty()) {
-      final Task t = q.pop();
-      assertEquals(p, ((SomeTask) t).getTaskProcessor());
-    }
-  }
-
-  /**
-   * Test method for {@link apgas.glb.TaskQueue#size()}.
+   * Test method for {@link apgas.glb.util.Queue#size()}.
    */
   @Test
   public void testSize() {
-    final TaskQueue q = new TaskQueue();
+    final Queue<SomeTask> q = new Queue<>();
     assertEquals(0, q.size());
 
-    for (int i = 1; i < TaskQueue.QUEUE_SIZE; i++) {
+    for (int i = 1; i < Queue.QUEUE_SIZE; i++) {
       q.add(a);
       assertEquals(i, q.size());
     }
@@ -202,35 +186,42 @@ public class TaskQueueTest {
   }
 
   /**
-   * Test method for {@link apgas.glb.TaskQueue#TaskQueue()}.
+   * Test method for {@link apgas.glb.util.Queue#Queue()}.
    */
   @Test
-  public void testTaskQueue() {
-    final TaskQueue q = new TaskQueue();
+  public void testQueue() {
+    final Queue<SomeTask> q = new Queue<>();
     assert (q.isEmpty());
     assertEquals(0, q.size());
   }
 
   /**
-   * Dummy task used to test the TaskQueue
+   * Tests the method {@link Queue#process(int)}
+   */
+  @Test
+  public void testProcess() {
+    final Queue<SomeTask> q = new Queue<>();
+    q.process(1); // Should not throw an error
+
+    for (int i = 0; i < 50; i++) {
+      q.add(new SomeTask());
+    }
+    assertEquals(50, q.size());
+
+    q.process(10);
+    assertEquals(40, q.size());
+
+    q.process(50); // Again processing more tasks than there are in the Queue.
+    assertEquals(0, q.size());
+  }
+
+  /**
+   * Dummy task used to test the Queue
    *
    * @author Patrick Finnerty
    *
    */
-  private class SomeTask implements ForkTask {
-
-    private TaskProcessor processor;
-
-    /*
-     * (non-Javadoc)
-     *
-     * @see apgas.glb.Task#setTaskProcessor(apgas.glb.TaskProcessor)
-     */
-    @Override
-    public void setTaskProcessor(TaskProcessor p) {
-      processor = p;
-    }
-
+  private class SomeTask implements Task {
     /*
      * (non-Javadoc)
      *
@@ -238,49 +229,17 @@ public class TaskQueueTest {
      */
     @Override
     public void process() {
-      // Do nohting
-    }
-
-    /**
-     * Gives back the current processor of this task
-     *
-     * @return the current processor
-     */
-    public TaskProcessor getTaskProcessor() {
-      return processor;
+      // Do nothing
     }
 
     /*
      * (non-Javadoc)
      *
-     * @see apgas.glb.Task#getWeight()
+     * @see apgas.glb.util.Task#setProcessor(apgas.glb.TaskBagProcessor)
      */
     @Override
-    public int getWeight() {
-      // A 0 weight would probably be wrong but as we are not performing any
-      // computation it does not hurt.
-      return 0;
+    public void setProcessor(TaskBagProcessor p) {
+      // Not used
     }
-
-  }
-
-  /**
-   * Dummy class used for testing
-   *
-   * @author Patrick Finnerty
-   *
-   */
-  private class SomeTaskProcessor implements TaskProcessor {
-
-    /*
-     * (non-Javadoc)
-     *
-     * @see apgas.glb.TaskProcessor#addTask(apgas.glb.Task)
-     */
-    @Override
-    public void addTask(Task t) {
-      // not Used
-    }
-
   }
 }

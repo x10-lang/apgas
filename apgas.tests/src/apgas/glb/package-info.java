@@ -2,8 +2,8 @@
  *
  */
 /**
- * This package contains unit tests for the apgas.glb API.
- * 
+ * This package contains unit tests for the apgas.glb package.
+ *
  * @author Patrick Finnerty
  *
  */

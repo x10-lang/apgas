@@ -5,6 +5,7 @@ package apgas.glb;
 
 import static apgas.Constructs.*;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -45,13 +46,17 @@ public final class GLBProcessor extends PlaceLocalObject
    */
   private static final String DEFAULT_PLACE_COUNT = "4";
 
-  /** Bag of tasks to be processed */
+  /** Collection of tasks bags to be processed */
   @SuppressWarnings("rawtypes")
   private final Map<String, TaskBag> bagsToDo;
 
-  /** Bag of task that have been processed */
+  /** Collection of tasks bags that have been processed */
   @SuppressWarnings("rawtypes")
   private final Map<String, TaskBag> bagsDone;
+
+  /** Collection of folds handled by this computation place */
+  @SuppressWarnings("rawtypes")
+  private final Map<String, Fold> folds;
 
   /** Brings the APGAS place id to the class {@link GLBProcessor} */
   private final Place home = here();
@@ -116,6 +121,7 @@ public final class GLBProcessor extends PlaceLocalObject
     state = -2;
     bagsToDo.clear();
     bagsDone.clear();
+    folds.clear();
   }
 
   /**
@@ -199,6 +205,36 @@ public final class GLBProcessor extends PlaceLocalObject
         });
       }
     }
+  }
+
+  /*
+   * (non-Javadoc)
+   *
+   * @see apgas.glb.TaskBagProcessor#fold(apgas.glb.Fold)
+   */
+  @SuppressWarnings("unchecked")
+  @Override
+  public synchronized <F extends Fold<F>> void fold(F fold) {
+    final String key = fold.getClass().getName();
+    final F existing = (F) folds.get(key);
+
+    if (existing != null) {
+      existing.fold(fold);
+    } else {
+      folds.put(key, fold);
+    }
+  }
+
+  /**
+   * Folds all this instance folds with that of place 0 before clearing them.
+   * Should not be called if this instance if place 0.
+   */
+  @SuppressWarnings("unchecked")
+  private <F extends Fold<F>> void gather() {
+    for (final Fold<?> f : folds.values()) {
+      asyncAt(place(0), () -> fold((F) f));
+    }
+    folds.clear();
   }
 
   /**
@@ -343,6 +379,11 @@ public final class GLBProcessor extends PlaceLocalObject
       });
     }
 
+    // Folding this instance's folds into that of place 0
+    if (home.id != 0) {
+      gather();
+    }
+
     // Establishing lifeline
     lifelinesteal();
     System.err.println(home + " stopping");
@@ -426,6 +467,18 @@ public final class GLBProcessor extends PlaceLocalObject
   }
 
   /**
+   * Gives back the {@link Fold} that were computed during the previous
+   * computation. Method {@link #compute()} should be called before to ensure
+   * the computation is actually performed.
+   * 
+   * @return
+   */
+  @SuppressWarnings("rawtypes")
+  public Collection<Fold> result() {
+    return folds.values();
+  }
+
+  /**
    * Creates a GLBProcessor (factory method)
    * <p>
    * This yields a GLBProcessor using default configuration.
@@ -488,5 +541,6 @@ public final class GLBProcessor extends PlaceLocalObject
     RANDOM_STEAL_ATTEMPTS = randomStealAttempts;
     bagsToDo = new HashMap<>();
     bagsDone = new HashMap<>();
+    folds = new HashMap<>();
   }
 }

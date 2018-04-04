@@ -24,4 +24,14 @@ public interface TaskBagProcessor {
    *          the task bag to be added to the TaskBagProcessor
    */
   public <B extends TaskBag<B>> void addTaskBag(B b);
+
+  /**
+   * Folds the given {@link Fold} into either an existing {@link Fold} instance
+   * of the same type or keeps it in order to be folded with later {@link Fold}s
+   * of the same type.
+   *
+   * @param fold
+   *          the {@link Fold} to be folded by the {@link TaskBagProcessor}.
+   */
+  public <F extends Fold<F>> void fold(F fold);
 }

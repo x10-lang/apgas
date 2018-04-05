@@ -5,6 +5,7 @@ package apgas.glb;
 
 import static apgas.Constructs.*;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,8 +30,7 @@ import apgas.util.PlaceLocalObject;
  * @author Patrick Finnerty
  *
  */
-public final class GLBProcessor extends PlaceLocalObject
-    implements Processor {
+public final class GLBProcessor extends PlaceLocalObject implements Processor {
 
   /** Default number of tasks to process before responding to thieves */
   private static final int DEFAULT_WORK_UNIT = 40;
@@ -141,7 +141,8 @@ public final class GLBProcessor extends PlaceLocalObject
    *          the work given by place {@code p}, possibly <code>null</code>.
    */
   @SuppressWarnings("unchecked")
-  private synchronized <B extends Bag<B>> void deal(Place p, B gift) {
+  private synchronized <B extends Bag<B> & Serializable> void deal(Place p,
+      B gift) {
     // We are presumably receiving work from place p. Therefore this place
     // should be in state 'p'.
     assert state == p.id;
@@ -176,7 +177,7 @@ public final class GLBProcessor extends PlaceLocalObject
    * @param <B>the
    *          type of offered work given to thieves
    */
-  private <B extends Bag<B>> void distribute() {
+  private <B extends Bag<B> & Serializable> void distribute() {
     if (places == 1) {
       return;
     }
@@ -213,7 +214,7 @@ public final class GLBProcessor extends PlaceLocalObject
    */
   @SuppressWarnings("unchecked")
   @Override
-  public synchronized <F extends Fold<F>> void fold(F fold) {
+  public synchronized <F extends Fold<F> & Serializable> void fold(F fold) {
     final String key = fold.getClass().getName();
     final F existing = (F) folds.get(key);
 
@@ -232,7 +233,7 @@ public final class GLBProcessor extends PlaceLocalObject
    *          the type of the folds to be sent
    */
   @SuppressWarnings("unchecked")
-  private <F extends Fold<F>> void gather() {
+  private <F extends Fold<F> & Serializable> void gather() {
     for (final Fold<?> f : folds.values()) {
       asyncAt(place(0), () -> fold((F) f));
     }
@@ -285,7 +286,8 @@ public final class GLBProcessor extends PlaceLocalObject
    *          the work to be given to the place
    */
   @SuppressWarnings("unchecked")
-  private synchronized <B extends Bag<B>> void lifelinedeal(B q) {
+  private synchronized <B extends Bag<B> & Serializable> void lifelinedeal(
+      B q) {
     if (q != null) {
       final B d = (B) bagsDone.remove(q.getClass().getName()); // Possibly null
       if (d != null) {
@@ -436,7 +438,7 @@ public final class GLBProcessor extends PlaceLocalObject
 
   @SuppressWarnings("unchecked")
   @Override
-  public <B extends Bag<B>> void addTaskBag(B b) {
+  public <B extends Bag<B> & Serializable> void addTaskBag(B b) {
     final B done = (B) bagsToDo.remove(b.getClass().getName());
     if (done != null) {
       b.merge(done);

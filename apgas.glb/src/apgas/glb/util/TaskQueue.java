@@ -7,13 +7,12 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.NoSuchElementException;
 
-import apgas.glb.Fold;
 import apgas.glb.Bag;
+import apgas.glb.Fold;
 import apgas.glb.Processor;
 
 /**
- * Class managing the queue of tasks to be performed by the
- * {@link Processor}.
+ * Class managing the queue of tasks to be performed by the {@link Processor}.
  * <p>
  * The tasks to be performed are stored in an array but behave as a double-ended
  * queue. Two indices, {@link #firstIndex} and {@link #lastIndex} keep track of
@@ -75,7 +74,8 @@ public class TaskQueue implements Bag<TaskQueue>, TaskBag, Serializable {
   /**
    * Indicates if there are no tasks left in the queue
    *
-   * @return {@code true} if the {@link TaskQueue} if empty, {@code false} otherwise
+   * @return {@code true} if the {@link TaskQueue} if empty, {@code false}
+   *         otherwise
    */
   @Override
   public boolean isEmpty() {
@@ -127,8 +127,8 @@ public class TaskQueue implements Bag<TaskQueue>, TaskBag, Serializable {
 
   /**
    * Removes half of the current tasks of this tasks queue and return the
-   * collection of the removed element (presumably to be {@link #merge(TaskQueue)}d
-   * in an other instance of GLBProcessor.
+   * collection of the removed element (presumably to be
+   * {@link #merge(TaskQueue)}d in an other instance of GLBProcessor.
    *
    * @return Collection of Tasks removed from this task queue.
    */
@@ -211,7 +211,7 @@ public class TaskQueue implements Bag<TaskQueue>, TaskBag, Serializable {
    * @see apgas.glb.util.TaskBag#addTask(apgas.glb.util.Task)
    */
   @Override
-  public void addTask(Task t) {
+  public <T extends Task & Serializable> void addTask(T t) {
     add(t);
   }
 
@@ -221,7 +221,7 @@ public class TaskQueue implements Bag<TaskQueue>, TaskBag, Serializable {
    * @see apgas.glb.util.TaskBag#addTaskBag(apgas.glb.Bag)
    */
   @Override
-  public <B extends Bag<B>> void addTaskBag(B bag) {
+  public <B extends Bag<B> & Serializable> void addTaskBag(B bag) {
     processor.addTaskBag(bag);
   }
 
@@ -231,7 +231,7 @@ public class TaskQueue implements Bag<TaskQueue>, TaskBag, Serializable {
    * @see apgas.glb.util.TaskBag#addFold(apgas.glb.Fold)
    */
   @Override
-  public <F extends Fold<F>> void addFold(F fold) {
+  public <F extends Fold<F> & Serializable> void addFold(F fold) {
     processor.fold(fold);
   }
 }

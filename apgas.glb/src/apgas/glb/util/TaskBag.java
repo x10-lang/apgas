@@ -3,6 +3,8 @@
  */
 package apgas.glb.util;
 
+import java.io.Serializable;
+
 import apgas.glb.Bag;
 import apgas.glb.Fold;
 
@@ -21,7 +23,7 @@ public interface TaskBag {
    * @param t
    *          the task to add
    */
-  public void addTask(Task t);
+  public <T extends Task & Serializable> void addTask(T t);
 
   /**
    * Adds a new {@link Bag} to the computation
@@ -31,15 +33,15 @@ public interface TaskBag {
    * @param bag
    *          the {@link Bag} to be added
    */
-  public <B extends Bag<B>> void addTaskBag(B bag);
+  public <B extends Bag<B> & Serializable> void addTaskBag(B bag);
 
   /**
    * Adds a new {@link Fold} to the computation
-   * 
+   *
    * @param <F>
    *          the type of {@link Fold} given as parameter
    * @param fold
    *          the {@link Fold} to be added
    */
-  public <F extends Fold<F>> void addFold(F fold);
+  public <F extends Fold<F> & Serializable> void addFold(F fold);
 }

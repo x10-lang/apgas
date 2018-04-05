@@ -3,6 +3,8 @@
  */
 package apgas.glb;
 
+import java.io.Serializable;
+
 /**
  * {@link Processor} provides services to the {@link Bag}s it is responsible
  * for, namely it enables {@link Bag}s to give it new {@link Bag}s to compute
@@ -28,7 +30,7 @@ public interface Processor {
    * @param b
    *          the task bag to be added to the Processor
    */
-  public <B extends Bag<B>> void addTaskBag(B b);
+  public <B extends Bag<B> & Serializable> void addTaskBag(B b);
 
   /**
    * Folds the given {@link Fold} into an existing {@link Fold} instance of the
@@ -40,5 +42,5 @@ public interface Processor {
    * @param fold
    *          the {@link Fold} to be folded by the {@link Processor}.
    */
-  public <F extends Fold<F>> void fold(F fold);
+  public <F extends Fold<F> & Serializable> void fold(F fold);
 }

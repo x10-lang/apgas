@@ -184,7 +184,7 @@ public class QueueTest {
   }
 
   /**
-   * Test method for {@link apgas.glb.util.TaskQueue#Queue()}.
+   * Test method for {@link apgas.glb.util.TaskQueue#TaskQueue()}.
    */
   @Test
   public void testQueue() {
@@ -209,7 +209,8 @@ public class QueueTest {
     q.process(10);
     assertEquals(40, q.size());
 
-    q.process(50); // Again processing more tasks than there are in the TaskQueue.
+    q.process(50); // Again processing more tasks than there are in the
+                   // TaskQueue.
     assertEquals(0, q.size());
   }
 
@@ -232,7 +233,7 @@ public class QueueTest {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see apgas.glb.util.Task#setProcessor(apgas.glb.util.TaskBag)
      */
     @Override

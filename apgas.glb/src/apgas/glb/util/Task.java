@@ -31,5 +31,5 @@ public interface Task {
    * @param p
    *          the {@link TaskBagProcessor}
    */
-  public void setProcessor(TaskBagProcessor p);
+  public void setProcessor(TaskQueue p);
 }

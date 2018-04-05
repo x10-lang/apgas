@@ -4,10 +4,10 @@
 package apgas.glb.util;
 
 import java.io.Serializable;
-import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.NoSuchElementException;
 
+import apgas.glb.Fold;
 import apgas.glb.TaskBag;
 import apgas.glb.TaskBagProcessor;
 
@@ -25,7 +25,7 @@ import apgas.glb.TaskBagProcessor;
  * @author Patrick Finnerty
  *
  */
-public class Queue<T extends Task> implements TaskBag<Queue<T>>, Serializable {
+public class Queue implements TaskBag<Queue>, TaskQueue, Serializable {
 
   /** Default size of the array {@link #tasks} containing the tasks */
   public static final int QUEUE_SIZE = 10;
@@ -34,13 +34,15 @@ public class Queue<T extends Task> implements TaskBag<Queue<T>>, Serializable {
   private static final long serialVersionUID = 1257150853488353701L;
 
   /** Container for the tasks */
-  private Object[] tasks;
+  private Task[] tasks;
 
   /** First occupied index in the array */
   private int firstIndex;
 
   /** First free index in the array */
   private int lastIndex;
+
+  private TaskBagProcessor processor = null;
 
   /**
    * Adds the given task to the end of the task queue. If the tasks array
@@ -50,16 +52,15 @@ public class Queue<T extends Task> implements TaskBag<Queue<T>>, Serializable {
    * @param t
    *          the task to be added
    */
-  public void add(T t) {
+  public void add(Task t) {
+    t.setProcessor(this);
     tasks[lastIndex] = t;
     lastIndex = (lastIndex + 1) % tasks.length;
 
     if (lastIndex == firstIndex) {
       // Overflow problem, the array is full
       int newLast = 0;
-      @SuppressWarnings("unchecked")
-      final T newTaskArray[] = (T[]) Array.newInstance(t.getClass(),
-          QUEUE_SIZE + tasks.length);
+      final Task newTaskArray[] = new Task[QUEUE_SIZE + tasks.length];
       do {
         newTaskArray[newLast] = pop();
         newLast++;
@@ -89,9 +90,11 @@ public class Queue<T extends Task> implements TaskBag<Queue<T>>, Serializable {
    *          the queue of tasks to be added
    */
   @Override
-  public void merge(Queue<T> q) {
+  public void merge(Queue q) {
     while (!q.isEmpty()) {
-      add(q.pop());
+      final Task t = q.pop();
+      t.setProcessor(this);
+      add(t);
     }
   }
 
@@ -101,12 +104,11 @@ public class Queue<T extends Task> implements TaskBag<Queue<T>>, Serializable {
    *
    * @return the first Task in the Queue or null if the Queue is empty
    */
-  @SuppressWarnings("unchecked")
-  public T peep() {
+  public Task peep() {
     if (isEmpty()) {
       return null;
     } else {
-      return (T) tasks[firstIndex];
+      return tasks[firstIndex];
     }
   }
 
@@ -117,9 +119,8 @@ public class Queue<T extends Task> implements TaskBag<Queue<T>>, Serializable {
    * @throws NoSuchElementException
    *           is there is no task in the queue
    */
-  public T pop() throws NoSuchElementException {
-    @SuppressWarnings("unchecked")
-    final T t = (T) tasks[firstIndex];
+  public Task pop() throws NoSuchElementException {
+    final Task t = tasks[firstIndex];
     firstIndex = (firstIndex + 1) % tasks.length;
     return t;
   }
@@ -132,8 +133,8 @@ public class Queue<T extends Task> implements TaskBag<Queue<T>>, Serializable {
    * @return Collection of Tasks removed from this task queue.
    */
   @Override
-  public Queue<T> split() {
-    final Object[] sharedTasks = tasks.clone();
+  public Queue split() {
+    final Task[] sharedTasks = tasks.clone();
 
     final int elements = size() / 2; // number of elements to be passed on
 
@@ -141,7 +142,7 @@ public class Queue<T extends Task> implements TaskBag<Queue<T>>, Serializable {
     final int newTaskLastIndex = lastIndex;
     lastIndex = splitIndex;
 
-    return new Queue<>(sharedTasks, splitIndex, newTaskLastIndex);
+    return new Queue(sharedTasks, splitIndex, newTaskLastIndex);
   }
 
   /**
@@ -159,7 +160,7 @@ public class Queue<T extends Task> implements TaskBag<Queue<T>>, Serializable {
    * Creates an empty Queue
    */
   public Queue() {
-    tasks = new Object[QUEUE_SIZE];
+    tasks = new Task[QUEUE_SIZE];
     firstIndex = 0;
     lastIndex = 0;
   }
@@ -175,7 +176,7 @@ public class Queue<T extends Task> implements TaskBag<Queue<T>>, Serializable {
    * @param last
    *          the index of the first free slot in the task array
    */
-  private Queue(Object[] c, int first, int last) {
+  private Queue(Task[] c, int first, int last) {
     tasks = c;
     firstIndex = first;
     lastIndex = last;
@@ -201,9 +202,36 @@ public class Queue<T extends Task> implements TaskBag<Queue<T>>, Serializable {
    */
   @Override
   public void setProcessor(TaskBagProcessor p) {
-    for (int i = firstIndex; i < lastIndex; i = (i + 1) % tasks.length) {
-      ((Task) tasks[i]).setProcessor(p);
-    }
+    processor = p;
+  }
 
+  /*
+   * (non-Javadoc)
+   *
+   * @see apgas.glb.util.TaskQueue#addTask(apgas.glb.util.Task)
+   */
+  @Override
+  public void addTask(Task t) {
+    add(t);
+  }
+
+  /*
+   * (non-Javadoc)
+   *
+   * @see apgas.glb.util.TaskQueue#addTaskBag(apgas.glb.TaskBag)
+   */
+  @Override
+  public <B extends TaskBag<B>> void addTaskBag(B bag) {
+    processor.addTaskBag(bag);
+  }
+
+  /*
+   * (non-Javadoc)
+   *
+   * @see apgas.glb.util.TaskQueue#addFold(apgas.glb.Fold)
+   */
+  @Override
+  public <F extends Fold<F>> void addFold(F fold) {
+    processor.fold(fold);
   }
 }

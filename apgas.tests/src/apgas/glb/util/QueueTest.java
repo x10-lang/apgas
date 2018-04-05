@@ -12,7 +12,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Test class for {@link apgas.glb.util.Queue}
+ * Test class for {@link apgas.glb.util.TaskQueue}
  *
  * @author Patrick Finnerty
  *
@@ -25,7 +25,7 @@ public class QueueTest {
   static private SomeTask a, b, c;
 
   /**
-   * Initializes three Task to be used for Queue testing
+   * Initializes three Task to be used for TaskQueue testing
    */
   @BeforeClass
   public static void setup() {
@@ -36,11 +36,11 @@ public class QueueTest {
   }
 
   /**
-   * Test method for {@link apgas.glb.util.Queue#add(apgas.glb.util.Task)}.
+   * Test method for {@link apgas.glb.util.TaskQueue#add(apgas.glb.util.Task)}.
    */
   @Test
   public void testAdd() {
-    final Queue q = new Queue();
+    final TaskQueue q = new TaskQueue();
     q.add(a);
     assertEquals(a, q.peep());
 
@@ -57,11 +57,11 @@ public class QueueTest {
   }
 
   /**
-   * Test method for {@link apgas.glb.util.Queue#isEmpty()}.
+   * Test method for {@link apgas.glb.util.TaskQueue#isEmpty()}.
    */
   @Test
   public void testIsEmpty() {
-    final Queue t = new Queue();
+    final TaskQueue t = new TaskQueue();
     assert (t.isEmpty());
 
     t.add(a);
@@ -79,12 +79,12 @@ public class QueueTest {
   }
 
   /**
-   * Test method for {@link apgas.glb.util.Queue#merge(Queue)}.
+   * Test method for {@link apgas.glb.util.TaskQueue#merge(TaskQueue)}.
    */
   @Test
   public void testMerge() {
-    final Queue q = new Queue();
-    final Queue r = new Queue();
+    final TaskQueue q = new TaskQueue();
+    final TaskQueue r = new TaskQueue();
 
     q.add(a);
     q.add(b);
@@ -104,11 +104,11 @@ public class QueueTest {
   }
 
   /**
-   * Test method for {@link apgas.glb.util.Queue#peep()}.
+   * Test method for {@link apgas.glb.util.TaskQueue#peep()}.
    */
   @Test
   public void testPeep() {
-    final Queue q = new Queue();
+    final TaskQueue q = new TaskQueue();
     q.add(a);
 
     assertEquals(a, q.peep());
@@ -120,11 +120,11 @@ public class QueueTest {
   }
 
   /**
-   * Test method for {@link apgas.glb.util.Queue#pop()}.
+   * Test method for {@link apgas.glb.util.TaskQueue#pop()}.
    */
   @Test
   public void testPop() {
-    final Queue q = new Queue();
+    final TaskQueue q = new TaskQueue();
 
     q.add(a);
     assertEquals(a, q.pop());
@@ -138,15 +138,15 @@ public class QueueTest {
   }
 
   /**
-   * Test method for {@link apgas.glb.util.Queue#split()}.
+   * Test method for {@link apgas.glb.util.TaskQueue#split()}.
    */
   @Test
   public void testSplit() {
-    final Queue q = new Queue();
+    final TaskQueue q = new TaskQueue();
     q.add(a);
     q.add(b);
 
-    final Queue r = q.split();
+    final TaskQueue r = q.split();
     assertEquals(2, r.size() + q.size());
 
     final Collection<Task> c = new ArrayList<>();
@@ -165,14 +165,14 @@ public class QueueTest {
   }
 
   /**
-   * Test method for {@link apgas.glb.util.Queue#size()}.
+   * Test method for {@link apgas.glb.util.TaskQueue#size()}.
    */
   @Test
   public void testSize() {
-    final Queue q = new Queue();
+    final TaskQueue q = new TaskQueue();
     assertEquals(0, q.size());
 
-    for (int i = 1; i < Queue.QUEUE_SIZE; i++) {
+    for (int i = 1; i < TaskQueue.QUEUE_SIZE; i++) {
       q.add(a);
       assertEquals(i, q.size());
     }
@@ -184,21 +184,21 @@ public class QueueTest {
   }
 
   /**
-   * Test method for {@link apgas.glb.util.Queue#Queue()}.
+   * Test method for {@link apgas.glb.util.TaskQueue#Queue()}.
    */
   @Test
   public void testQueue() {
-    final Queue q = new Queue();
+    final TaskQueue q = new TaskQueue();
     assert (q.isEmpty());
     assertEquals(0, q.size());
   }
 
   /**
-   * Tests the method {@link Queue#process(int)}
+   * Tests the method {@link TaskQueue#process(int)}
    */
   @Test
   public void testProcess() {
-    final Queue q = new Queue();
+    final TaskQueue q = new TaskQueue();
     q.process(1); // Should not throw an error
 
     for (int i = 0; i < 50; i++) {
@@ -209,12 +209,12 @@ public class QueueTest {
     q.process(10);
     assertEquals(40, q.size());
 
-    q.process(50); // Again processing more tasks than there are in the Queue.
+    q.process(50); // Again processing more tasks than there are in the TaskQueue.
     assertEquals(0, q.size());
   }
 
   /**
-   * Dummy task used to test the Queue
+   * Dummy task used to test the TaskQueue
    *
    * @author Patrick Finnerty
    *
@@ -233,10 +233,10 @@ public class QueueTest {
     /*
      * (non-Javadoc)
      * 
-     * @see apgas.glb.util.Task#setProcessor(apgas.glb.util.TaskQueue)
+     * @see apgas.glb.util.Task#setProcessor(apgas.glb.util.TaskBag)
      */
     @Override
-    public void setProcessor(TaskQueue p) {
+    public void setProcessor(TaskBag p) {
       // not used
     }
 

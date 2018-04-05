@@ -8,16 +8,22 @@ import java.security.DigestException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import apgas.glb.Bag;
+import apgas.glb.BagProcessor;
 import apgas.glb.GLBProcessor;
-import apgas.glb.TaskBag;
-import apgas.glb.TaskBagProcessor;
 
 /**
+ * Unbalanced Tree Search computation. This class is an adapatation from the
+ * apgas.examples.UTS class written by to fit the apgas.glb api.
+ *
  * @author Patrick Finnerty
  *
  */
-public class UTSTask implements Serializable, TaskBag<UTSTask> {
+public class UTSTask implements Serializable, Bag<UTSTask> {
 
+  /**
+   * Serial Version UID
+   */
   private static final long serialVersionUID = 2200935927036145803L;
 
   /** branching factor: 4 */
@@ -60,7 +66,7 @@ public class UTSTask implements Serializable, TaskBag<UTSTask> {
   public int size = 0;
 
   /** Processor in charge of computing this UTSTask */
-  private TaskBagProcessor processor = null;
+  private BagProcessor processor = null;
 
   /**
    * Constructor
@@ -276,7 +282,7 @@ public class UTSTask implements Serializable, TaskBag<UTSTask> {
   /*
    * (non-Javadoc)
    *
-   * @see apgas.glb.TaskBag#process(int)
+   * @see apgas.glb.Bag#process(int)
    */
   @Override
   public void process(int workAmount) {
@@ -293,7 +299,7 @@ public class UTSTask implements Serializable, TaskBag<UTSTask> {
   /*
    * (non-Javadoc)
    *
-   * @see apgas.glb.TaskBag#isEmpty()
+   * @see apgas.glb.Bag#isEmpty()
    */
   @Override
   public boolean isEmpty() {
@@ -303,10 +309,10 @@ public class UTSTask implements Serializable, TaskBag<UTSTask> {
   /*
    * (non-Javadoc)
    *
-   * @see apgas.glb.TaskBag#setProcessor(apgas.glb.TaskBagProcessor)
+   * @see apgas.glb.Bag#setProcessor(apgas.glb.BagProcessor)
    */
   @Override
-  public void setProcessor(TaskBagProcessor p) {
+  public void setProcessor(BagProcessor p) {
     processor = p;
   }
 
@@ -314,6 +320,13 @@ public class UTSTask implements Serializable, TaskBag<UTSTask> {
     return str.substring(start, Math.min(end, str.length()));
   }
 
+  /**
+   * Launches the computation using the {@link apgas.glb.GLBProcessor}
+   *
+   * @param args
+   *          one argument can be specified : the depth of the tree to explore.
+   *          If no argument is given, the default value, 13 is used.
+   */
   public static void main(String[] args) {
     int depth = 13;
     try {

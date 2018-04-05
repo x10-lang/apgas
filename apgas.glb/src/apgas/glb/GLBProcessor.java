@@ -20,17 +20,17 @@ import apgas.util.PlaceLocalObject;
  * GLBProcessor proposes a simple API to request for work to be computed using
  * the lifeline based global load balancing framework proposed by APGAS.
  * <p>
- * Initial {@link TaskBag}s to be processed can be added to this instance by
- * calling {@link #addTaskBag(TaskBag)}. Computation is launched using the
+ * Initial {@link Bag}s to be processed can be added to this instance by calling
+ * {@link #addTaskBag(Bag)}. Computation is launched using the
  * {@link #compute()} method. If the programmer wishes to use same computing
  * instance for several successive calculation, method {@link #reset()} should
- * be called before adding the new {@link TaskBag}s to be processed.
+ * be called before adding the new {@link Bag}s to be processed.
  *
  * @author Patrick Finnerty
  *
  */
 public final class GLBProcessor extends PlaceLocalObject
-    implements TaskBagProcessor {
+    implements BagProcessor {
 
   /** Default number of tasks to process before responding to thieves */
   private static final int DEFAULT_WORK_UNIT = 40;
@@ -48,11 +48,11 @@ public final class GLBProcessor extends PlaceLocalObject
 
   /** Collection of tasks bags to be processed */
   @SuppressWarnings("rawtypes")
-  private final Map<String, TaskBag> bagsToDo;
+  private final Map<String, Bag> bagsToDo;
 
   /** Collection of tasks bags that have been processed */
   @SuppressWarnings("rawtypes")
-  private final Map<String, TaskBag> bagsDone;
+  private final Map<String, Bag> bagsDone;
 
   /** Collection of folds handled by this computation place */
   @SuppressWarnings("rawtypes")
@@ -89,7 +89,7 @@ public final class GLBProcessor extends PlaceLocalObject
    * from its lifeline except place 0.
    *
    * @see #lifelinesteal()
-   * @see #lifelinedeal(TaskBag)
+   * @see #lifelinedeal(Bag)
    */
   private final AtomicBoolean lifeline = new AtomicBoolean(home.id != 3);
 
@@ -127,12 +127,11 @@ public final class GLBProcessor extends PlaceLocalObject
   /**
    * Yields back some work in response to a {@link #steal()}
    * <p>
-   * Merges the proposed {@link TaskBag} {@code gift} into this place's
-   * corresponding type {@link TaskBag} if any and puts it into
-   * {@link #bagsToDo} before waking up the waiting thread in the
-   * {@link #steal()} procedure. This will in turn make this place check its
-   * {@link #bagsToDo} for any work and either process the given work or switch
-   * to the lifeline steal procedure.
+   * Merges the proposed {@link Bag} {@code gift} into this place's
+   * corresponding type {@link Bag} if any and puts it into {@link #bagsToDo}
+   * before waking up the waiting thread in the {@link #steal()} procedure. This
+   * will in turn make this place check its {@link #bagsToDo} for any work and
+   * either process the given work or switch to the lifeline steal procedure.
    *
    * @param <B>
    *          the type of gift given
@@ -142,7 +141,7 @@ public final class GLBProcessor extends PlaceLocalObject
    *          the work given by place {@code p}, possibly <code>null</code>.
    */
   @SuppressWarnings("unchecked")
-  private synchronized <B extends TaskBag<B>> void deal(Place p, B gift) {
+  private synchronized <B extends Bag<B>> void deal(Place p, B gift) {
     // We are presumably receiving work from place p. Therefore this place
     // should be in state 'p'.
     assert state == p.id;
@@ -167,24 +166,24 @@ public final class GLBProcessor extends PlaceLocalObject
   }
 
   /**
-   * Distributes {@link TaskBag}s to the random thieves and the lifeline thieves
+   * Distributes {@link Bag}s to the random thieves and the lifeline thieves
    * asking for work from this place.
    * <p>
-   * Splits this place's {@link #bagsToDo} and {@link #deal(Place, TaskBag)}s
-   * with random thieves before {@link GLBProcessor#lifelinedeal(TaskBag)}ing
-   * with the lifeline thieves.
+   * Splits this place's {@link #bagsToDo} and {@link #deal(Place, Bag)}s with
+   * random thieves before {@link GLBProcessor#lifelinedeal(Bag)}ing with the
+   * lifeline thieves.
    *
    * @param <B>the
    *          type of offered work given to thieves
    */
-  private <B extends TaskBag<B>> void distribute() {
+  private <B extends Bag<B>> void distribute() {
     if (places == 1) {
       return;
     }
     Place p;
     while ((p = thieves.poll()) != null) {
       final String key = bagsToDo.keySet().iterator().next();
-      final TaskBag<?> bag = bagsToDo.get(key);
+      final Bag<?> bag = bagsToDo.get(key);
       @SuppressWarnings("unchecked")
       final B toGive = (B) bag.split();
       final Place h = home;
@@ -194,7 +193,7 @@ public final class GLBProcessor extends PlaceLocalObject
     }
     if (!bagsToDo.isEmpty() && lifeline.get()) {
       final String key = bagsToDo.keySet().iterator().next();
-      final TaskBag<?> bag = bagsToDo.get(key);
+      final Bag<?> bag = bagsToDo.get(key);
       @SuppressWarnings("unchecked")
       final B toGive = (B) bag.split();
       if (toGive != null) {
@@ -210,7 +209,7 @@ public final class GLBProcessor extends PlaceLocalObject
   /*
    * (non-Javadoc)
    *
-   * @see apgas.glb.TaskBagProcessor#fold(apgas.glb.Fold)
+   * @see apgas.glb.BagProcessor#fold(apgas.glb.Fold)
    */
   @SuppressWarnings("unchecked")
   @Override
@@ -228,6 +227,9 @@ public final class GLBProcessor extends PlaceLocalObject
   /**
    * Folds all this instance folds with that of place 0 before clearing them.
    * Should not be called if this instance if place 0.
+   *
+   * @param <F>
+   *          the type of the folds to be sent
    */
   @SuppressWarnings("unchecked")
   private <F extends Fold<F>> void gather() {
@@ -277,13 +279,13 @@ public final class GLBProcessor extends PlaceLocalObject
    * Only makes sense if this place is in inactive {@link #state}.
    *
    * @param <B>the
-   *          type of the given {@link TaskBag}
+   *          type of the given {@link Bag}
    *
    * @param q
    *          the work to be given to the place
    */
   @SuppressWarnings("unchecked")
-  private synchronized <B extends TaskBag<B>> void lifelinedeal(B q) {
+  private synchronized <B extends Bag<B>> void lifelinedeal(B q) {
     if (q != null) {
       final B d = (B) bagsDone.remove(q.getClass().getName()); // Possibly null
       if (d != null) {
@@ -302,8 +304,8 @@ public final class GLBProcessor extends PlaceLocalObject
    * If this place is currently working, adds the thief to its {@link #thieves}
    * queue which will be processed when it performs a certain number of
    * iterations. If this place is not working, i.e. is trying to steal work
-   * (randomly or through a lifeline), asynchronously
-   * {@link #deal(Place, TaskBag)} {@code null} work.
+   * (randomly or through a lifeline), asynchronously {@link #deal(Place, Bag)}
+   * {@code null} work.
    *
    * @param p
    *          The place asking for work
@@ -336,7 +338,7 @@ public final class GLBProcessor extends PlaceLocalObject
    * put in a request between two attempted steals before establishing its
    * lifeline and stopping. This procedure can be called again if the lifeline
    * steal is successful : the place offering the work will call the
-   * {@link #run()} method on this place via {@link #lifelinedeal(TaskBag)}
+   * {@link #run()} method on this place via {@link #lifelinedeal(Bag)}
    */
   private void run() {
     System.err.println(home + " starting");
@@ -347,7 +349,7 @@ public final class GLBProcessor extends PlaceLocalObject
     while (!bagsToDo.isEmpty()) {
       while (!bagsToDo.isEmpty()) {
         final String key = bagsToDo.keySet().iterator().next();
-        final TaskBag<?> bag = bagsToDo.get(key);
+        final Bag<?> bag = bagsToDo.get(key);
 
         bag.process(WORK_UNIT);
 
@@ -434,7 +436,7 @@ public final class GLBProcessor extends PlaceLocalObject
 
   @SuppressWarnings("unchecked")
   @Override
-  public <B extends TaskBag<B>> void addTaskBag(B b) {
+  public <B extends Bag<B>> void addTaskBag(B b) {
     final B done = (B) bagsToDo.remove(b.getClass().getName());
     if (done != null) {
       b.merge(done);
@@ -470,8 +472,9 @@ public final class GLBProcessor extends PlaceLocalObject
    * Gives back the {@link Fold} that were computed during the previous
    * computation. Method {@link #compute()} should be called before to ensure
    * the computation is actually performed.
-   * 
-   * @return
+   *
+   * @return a collection containing all the {@link Fold} known to the
+   *         GLBProcessor, every instance being from a different class
    */
   @SuppressWarnings("rawtypes")
   public Collection<Fold> result() {
@@ -502,8 +505,8 @@ public final class GLBProcessor extends PlaceLocalObject
    * <p>
    * The returned GLBProcessor will follow the provided configuration that is :
    * <ul>
-   * <li>The number of work to be processed by {@link TaskBag#process(int)}
-   * before dealing with potential thieves
+   * <li>The number of work to be processed by {@link Bag#process(int)} before
+   * dealing with potential thieves
    * <li>The number of random steal attempts performed before turning to the the
    * lifeline-steal scheme.
    * </ul>

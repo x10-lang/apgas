@@ -11,11 +11,9 @@ import java.util.Collection;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import apgas.glb.TaskBagProcessor;
-
 /**
  * Test class for {@link apgas.glb.util.Queue}
- * 
+ *
  * @author Patrick Finnerty
  *
  */
@@ -42,7 +40,7 @@ public class QueueTest {
    */
   @Test
   public void testAdd() {
-    final Queue<SomeTask> q = new Queue<>();
+    final Queue q = new Queue();
     q.add(a);
     assertEquals(a, q.peep());
 
@@ -63,7 +61,7 @@ public class QueueTest {
    */
   @Test
   public void testIsEmpty() {
-    final Queue<SomeTask> t = new Queue<>();
+    final Queue t = new Queue();
     assert (t.isEmpty());
 
     t.add(a);
@@ -85,8 +83,8 @@ public class QueueTest {
    */
   @Test
   public void testMerge() {
-    final Queue<SomeTask> q = new Queue<>();
-    final Queue<SomeTask> r = new Queue<>();
+    final Queue q = new Queue();
+    final Queue r = new Queue();
 
     q.add(a);
     q.add(b);
@@ -110,7 +108,7 @@ public class QueueTest {
    */
   @Test
   public void testPeep() {
-    final Queue<SomeTask> q = new Queue<>();
+    final Queue q = new Queue();
     q.add(a);
 
     assertEquals(a, q.peep());
@@ -126,7 +124,7 @@ public class QueueTest {
    */
   @Test
   public void testPop() {
-    final Queue<SomeTask> q = new Queue<>();
+    final Queue q = new Queue();
 
     q.add(a);
     assertEquals(a, q.pop());
@@ -144,11 +142,11 @@ public class QueueTest {
    */
   @Test
   public void testSplit() {
-    final Queue<SomeTask> q = new Queue<>();
+    final Queue q = new Queue();
     q.add(a);
     q.add(b);
 
-    final Queue<SomeTask> r = q.split();
+    final Queue r = q.split();
     assertEquals(2, r.size() + q.size());
 
     final Collection<Task> c = new ArrayList<>();
@@ -171,7 +169,7 @@ public class QueueTest {
    */
   @Test
   public void testSize() {
-    final Queue<SomeTask> q = new Queue<>();
+    final Queue q = new Queue();
     assertEquals(0, q.size());
 
     for (int i = 1; i < Queue.QUEUE_SIZE; i++) {
@@ -190,7 +188,7 @@ public class QueueTest {
    */
   @Test
   public void testQueue() {
-    final Queue<SomeTask> q = new Queue<>();
+    final Queue q = new Queue();
     assert (q.isEmpty());
     assertEquals(0, q.size());
   }
@@ -200,7 +198,7 @@ public class QueueTest {
    */
   @Test
   public void testProcess() {
-    final Queue<SomeTask> q = new Queue<>();
+    final Queue q = new Queue();
     q.process(1); // Should not throw an error
 
     for (int i = 0; i < 50; i++) {
@@ -234,12 +232,13 @@ public class QueueTest {
 
     /*
      * (non-Javadoc)
-     *
-     * @see apgas.glb.util.Task#setProcessor(apgas.glb.TaskBagProcessor)
+     * 
+     * @see apgas.glb.util.Task#setProcessor(apgas.glb.util.TaskQueue)
      */
     @Override
-    public void setProcessor(TaskBagProcessor p) {
-      // Not used
+    public void setProcessor(TaskQueue p) {
+      // not used
     }
+
   }
 }

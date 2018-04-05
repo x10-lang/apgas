@@ -9,10 +9,11 @@ import org.junit.Test;
 
 import apgas.glb.util.Queue;
 import apgas.glb.util.Task;
+import apgas.glb.util.TaskQueue;
 
 /**
  * Test class for {@link apgas.glb.GLBProcessor}
- * 
+ *
  * @author Patrick Finnerty
  *
  */
@@ -27,7 +28,7 @@ public class GLBProcessorTest {
   }
 
   private void display(int tasknumber, int workUnit) {
-    final Queue<DisplayTask> queue = new Queue<>();
+    final Queue queue = new Queue();
     for (int i = 0; i < tasknumber; i++) {
       queue.add(new DisplayTask(Integer.toString(i)));
     }
@@ -71,12 +72,13 @@ public class GLBProcessorTest {
 
     /*
      * (non-Javadoc)
-     *
-     * @see apgas.glb.util.Task#setProcessor(apgas.glb.TaskBagProcessor)
+     * 
+     * @see apgas.glb.util.Task#setProcessor(apgas.glb.util.TaskQueue)
      */
     @Override
-    public void setProcessor(TaskBagProcessor p) {
+    public void setProcessor(TaskQueue p) {
       // Not used
     }
+
   }
 }

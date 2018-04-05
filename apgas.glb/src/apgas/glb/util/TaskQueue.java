@@ -9,11 +9,11 @@ import java.util.NoSuchElementException;
 
 import apgas.glb.Fold;
 import apgas.glb.Bag;
-import apgas.glb.BagProcessor;
+import apgas.glb.Processor;
 
 /**
  * Class managing the queue of tasks to be performed by the
- * {@link BagProcessor}.
+ * {@link Processor}.
  * <p>
  * The tasks to be performed are stored in an array but behave as a double-ended
  * queue. Two indices, {@link #firstIndex} and {@link #lastIndex} keep track of
@@ -42,7 +42,7 @@ public class TaskQueue implements Bag<TaskQueue>, TaskBag, Serializable {
   /** First free index in the array */
   private int lastIndex;
 
-  private BagProcessor processor = null;
+  private Processor processor = null;
 
   /**
    * Adds the given task to the end of the task queue. If the tasks array
@@ -198,10 +198,10 @@ public class TaskQueue implements Bag<TaskQueue>, TaskBag, Serializable {
   /*
    * (non-Javadoc)
    *
-   * @see apgas.glb.Bag#setProcessor(apgas.glb.BagProcessor)
+   * @see apgas.glb.Bag#setProcessor(apgas.glb.Processor)
    */
   @Override
-  public void setProcessor(BagProcessor p) {
+  public void setProcessor(Processor p) {
     processor = p;
   }
 

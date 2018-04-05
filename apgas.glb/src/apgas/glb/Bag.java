@@ -5,7 +5,7 @@ package apgas.glb;
 
 /**
  * Bag presents the required methods for some bag to be processed successfully
- * by a {@link BagProcessor}.
+ * by a {@link Processor}.
  *
  * @author Patrick Finnerty
  *
@@ -38,7 +38,7 @@ public interface Bag<B extends Bag<B>> {
    * Merges the task bag given as parameter into this instance.
    * <p>
    * Unlike {@link #split()} which can return {@code null}, the provided
-   * parameter will never be null (this is checked by the {@link BagProcessor}).
+   * parameter will never be null (this is checked by the {@link Processor}).
    *
    * @param b
    *          the tasks to be added to this task bag
@@ -58,12 +58,12 @@ public interface Bag<B extends Bag<B>> {
    * the value passed as paramater should be kept as a member of the class.
    * <p>
    * When the Bag is split and transferred from one place to another, the member
-   * is updated automatically by the {@link BagProcessor}. If the {@link Bag}
+   * is updated automatically by the {@link Processor}. If the {@link Bag}
    * does not spawn any Bag, the implementation of this method can be left
    * empty.
    *
    * @param p
-   *          the new {@link BagProcessor} to be kept.
+   *          the new {@link Processor} to be kept.
    */
-  public void setProcessor(BagProcessor p);
+  public void setProcessor(Processor p);
 }

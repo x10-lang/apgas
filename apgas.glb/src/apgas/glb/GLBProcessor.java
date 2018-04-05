@@ -30,7 +30,7 @@ import apgas.util.PlaceLocalObject;
  *
  */
 public final class GLBProcessor extends PlaceLocalObject
-    implements BagProcessor {
+    implements Processor {
 
   /** Default number of tasks to process before responding to thieves */
   private static final int DEFAULT_WORK_UNIT = 40;
@@ -209,7 +209,7 @@ public final class GLBProcessor extends PlaceLocalObject
   /*
    * (non-Javadoc)
    *
-   * @see apgas.glb.BagProcessor#fold(apgas.glb.Fold)
+   * @see apgas.glb.Processor#fold(apgas.glb.Fold)
    */
   @SuppressWarnings("unchecked")
   @Override

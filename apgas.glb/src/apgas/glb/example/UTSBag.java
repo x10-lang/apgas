@@ -9,7 +9,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 import apgas.glb.Bag;
-import apgas.glb.BagProcessor;
+import apgas.glb.Processor;
 import apgas.glb.GLBProcessor;
 
 /**
@@ -19,7 +19,7 @@ import apgas.glb.GLBProcessor;
  * @author Patrick Finnerty
  *
  */
-public class UTSTask implements Serializable, Bag<UTSTask> {
+public class UTSBag implements Serializable, Bag<UTSBag> {
 
   /**
    * Serial Version UID
@@ -65,18 +65,18 @@ public class UTSTask implements Serializable, Bag<UTSTask> {
   /** Number of nodes in the bag */
   public int size = 0;
 
-  /** Processor in charge of computing this UTSTask */
-  private BagProcessor processor = null;
+  /** Processor in charge of computing this UTSBag */
+  private Processor processor = null;
 
   /**
    * Constructor
    * <p>
    * Creates an empty UTS with no nodes to explore.
    */
-  public UTSTask() {
+  public UTSBag() {
   }
 
-  public UTSTask(int n) {
+  public UTSBag(int n) {
     hash = new byte[n * 20 + 4]; // slack for in-place SHA1 computation : n*20
                                  // as 20 cells are needed for each level and 4
                                  // extra for last cell child seeds
@@ -136,7 +136,7 @@ public class UTSTask implements Serializable, Bag<UTSTask> {
    * Initialises the hash array with zeros from indeces 0 to 15 and writes
    * number s (32 bit - 4 bytes integer) in the next 4 cells (from indeces 16 to
    * 19 included), updates the message digest to use the beginning of array hash
-   * on these cells and calls #{@link UTSTask#digest(MessageDigest, int)}.
+   * on these cells and calls #{@link UTSBag#digest(MessageDigest, int)}.
    *
    * @param md
    *          the message digest used to generate a 'random' sequence
@@ -218,7 +218,7 @@ public class UTSTask implements Serializable, Bag<UTSTask> {
    * @return a new UTS instance with half the known work of the current one
    */
   @Override
-  public UTSTask split() {
+  public UTSBag split() {
     int s = 0;
     for (int i = 0; i < size; ++i) {
       if ((upper[i] - lower[i]) >= 2) {
@@ -228,7 +228,7 @@ public class UTSTask implements Serializable, Bag<UTSTask> {
     if (s == 0) {
       return null;
     }
-    final UTSTask b = new UTSTask(s);
+    final UTSBag b = new UTSBag(s);
     for (int i = 0; i < size; ++i) {
       final int p = upper[i] - lower[i];
       if (p >= 2) {
@@ -248,7 +248,7 @@ public class UTSTask implements Serializable, Bag<UTSTask> {
    *          the work to be done
    */
   @Override
-  public void merge(UTSTask b) {
+  public void merge(UTSBag b) {
     final int s = size + b.size;
     while (s > depth.length) {
       grow();
@@ -309,10 +309,10 @@ public class UTSTask implements Serializable, Bag<UTSTask> {
   /*
    * (non-Javadoc)
    *
-   * @see apgas.glb.Bag#setProcessor(apgas.glb.BagProcessor)
+   * @see apgas.glb.Bag#setProcessor(apgas.glb.Processor)
    */
   @Override
-  public void setProcessor(BagProcessor p) {
+  public void setProcessor(Processor p) {
     processor = p;
   }
 
@@ -338,7 +338,7 @@ public class UTSTask implements Serializable, Bag<UTSTask> {
 
     final GLBProcessor processor = GLBProcessor.GLBProcessorFactory(500, 1);
 
-    final UTSTask taskBag = new UTSTask(64);
+    final UTSBag taskBag = new UTSBag(64);
     processor.addTaskBag(taskBag);
     taskBag.seed(md, 19, depth - 2);
 
@@ -347,7 +347,7 @@ public class UTSTask implements Serializable, Bag<UTSTask> {
     processor.compute();
 
     processor.reset();
-    final UTSTask secondBag = new UTSTask(64);
+    final UTSBag secondBag = new UTSBag(64);
     processor.addTaskBag(secondBag);
     secondBag.seed(md, 19, depth);
 

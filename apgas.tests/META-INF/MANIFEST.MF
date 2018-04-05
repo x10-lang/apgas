@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Tests
 Bundle-SymbolicName: apgas.tests
 Bundle-Version: 2.0.0.qualifier
-Export-Package: apgas.tests
+Export-Package: apgas
 Require-Bundle: apgas;bundle-version="2.0.0"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-Vendor: x10-users@lists.sourceforge.net

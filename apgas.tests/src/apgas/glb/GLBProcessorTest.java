@@ -35,7 +35,7 @@ public class GLBProcessorTest {
 
   /**
    * Tests the functioning of the folding mechanism using the Sum class
-   * 
+   *
    * @param value
    *          the sum value to be obtained
    */
@@ -54,11 +54,70 @@ public class GLBProcessorTest {
   }
 
   /**
+   * Tests the functionning of the folding mechanism of a Minimum class
+   *
+   * @param minimum
+   *          the target result
+   * @param qtt
+   *          the number of Min instance to be generated
+   */
+  private void min(int minimum, int qtt) {
+    processor.addTaskBag(new SpawnMinimum(minimum, qtt));
+    processor.compute();
+
+    @SuppressWarnings("rawtypes")
+    final Collection<Fold> res = processor.result();
+    assertEquals(1, res.size());
+    assert (res.toArray()[0] instanceof Min);
+
+    final Min m = (Min) res.toArray()[0];
+    assertEquals(minimum, m.value);
+  }
+
+  /**
    * Resets the GLBProcessor before a new computation is performed
    */
   @Before
   public void before() {
     processor.reset();
+  }
+
+  /**
+   * Tests the fold of 30 Min instances. No work sharing in this case as the
+   * number of tasks to process is lower than the workAmount given to the
+   * {@link Processor}
+   */
+  @Test
+  public void minTest30() {
+    min(0, 30);
+  }
+
+  /**
+   * Tests the fold of 500 Min instances with work stealing being performed as
+   * the number of tasks to process exceeds the work amount given to hte
+   * {@link Processor}.
+   */
+  @Test
+  public void minTest500() {
+    min(0, 500);
+  }
+
+  /**
+   * Tests the behaviour of the {@link GLBProcessor#reset()} method.
+   */
+  @Test
+  public void resetTest() {
+    min(0, 30);
+    processor.reset();
+
+    @SuppressWarnings("rawtypes")
+    Collection<Fold> res = processor.result();
+    assertEquals(0, res.size());
+
+    processor.compute(); // Re-launching computation but should be empty
+
+    res = processor.result(); // Result should still be empty
+    assertEquals(0, res.size());
   }
 
   /**
@@ -188,6 +247,119 @@ public class GLBProcessorTest {
     public SpawnSum(int qtt) {
       toSpawn = qtt;
     }
+  }
 
+  /**
+   * Class keeping the minimum value on integers
+   *
+   * @author Patrick Finnerty
+   *
+   */
+  private class Min implements Fold<Min>, Serializable {
+    /** Serial Version UID */
+    private static final long serialVersionUID = 2117157664169192829L;
+    /** Minimum value */
+    public int value;
+
+    @Override
+    public void fold(Min m) {
+      if (m.value < value) {
+        value = m.value;
+      }
+    }
+
+    /**
+     * Constructor
+     *
+     * @param v
+     *          the initial minimum value
+     */
+    public Min(int v) {
+      value = v;
+    }
+  }
+
+  private class SpawnMinimum implements Bag<SpawnMinimum>, Serializable {
+    /** Serial version UID */
+    private static final long serialVersionUID = 5783449607642360994L;
+    int min;
+    int qtt;
+    Processor processor;
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see apgas.glb.Bag#process(int)
+     */
+    @Override
+    public void process(int workAmount) {
+      while (workAmount > 0 && qtt > 1) {
+        processor.fold(new Min(min + 42));
+        workAmount--;
+        qtt--;
+      }
+      if (workAmount > 0) {
+        processor.fold(new Min(min));
+        qtt = 0;
+      }
+    }
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see apgas.glb.Bag#split()
+     */
+    @Override
+    public SpawnMinimum split() {
+      final int toSend = qtt / 2;
+
+      qtt -= toSend;
+
+      return new SpawnMinimum(min, toSend);
+    }
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see apgas.glb.Bag#merge(apgas.glb.Bag)
+     */
+    @Override
+    public void merge(SpawnMinimum b) {
+      min = b.min;
+      qtt += b.qtt;
+    }
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see apgas.glb.Bag#isEmpty()
+     */
+    @Override
+    public boolean isEmpty() {
+      return qtt <= 0;
+    }
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see apgas.glb.Bag#setProcessor(apgas.glb.Processor)
+     */
+    @Override
+    public void setProcessor(Processor p) {
+      processor = p;
+    }
+
+    /**
+     * Constructor
+     *
+     * @param m
+     *          minimum value to be spawned
+     * @param amount
+     *          number of Min instance to be spawned
+     */
+    public SpawnMinimum(int m, int amount) {
+      min = m;
+      qtt = amount;
+    }
   }
 }

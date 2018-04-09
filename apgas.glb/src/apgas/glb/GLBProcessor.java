@@ -215,6 +215,11 @@ public final class GLBProcessor extends PlaceLocalObject implements Processor {
   @SuppressWarnings("unchecked")
   @Override
   public synchronized <F extends Fold<F> & Serializable> void fold(F fold) {
+    /*
+     * This method needs to be synchronized since distant places are suceptible
+     * to call it when sending their results before quiescing.
+     */
+
     final String key = fold.getClass().getName();
     final F existing = (F) folds.get(key);
 
@@ -227,7 +232,7 @@ public final class GLBProcessor extends PlaceLocalObject implements Processor {
 
   /**
    * Folds all this instance folds with that of place 0 before clearing them.
-   * Should not be called if this instance if place 0.
+   * Should not be called if this instance is place 0.
    *
    * @param <F>
    *          the type of the folds to be sent
@@ -397,7 +402,7 @@ public final class GLBProcessor extends PlaceLocalObject implements Processor {
    * Attempts to steal work to a randomly chosen place. Will halt the process
    * until the target place answers (whether it indeed gave work or not).
    */
-  private synchronized void steal() {
+  private void steal() {
     if (places == 1) {
       // No other place exists, "this" is the only one.
       // Cannot perform a steal.

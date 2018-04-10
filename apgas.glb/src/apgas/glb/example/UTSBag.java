@@ -9,8 +9,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 import apgas.glb.Bag;
-import apgas.glb.Processor;
 import apgas.glb.GLBProcessor;
+import apgas.glb.WorkCollector;
 
 /**
  * Unbalanced Tree Search computation. This class is an adapatation from the
@@ -65,8 +65,8 @@ public class UTSBag implements Serializable, Bag<UTSBag> {
   /** Number of nodes in the bag */
   public int size = 0;
 
-  /** Processor in charge of computing this UTSBag */
-  private Processor processor = null;
+  /** WorkCollector in charge of computing this UTSBag */
+  private WorkCollector processor = null;
 
   /**
    * Constructor
@@ -101,7 +101,7 @@ public class UTSBag implements Serializable, Bag<UTSBag> {
     if (size >= depth.length) {
       grow();
     }
-    processor.fold(new Sum(1));
+    processor.giveFold(new Sum(1));
     // ++count; // We are exploring one node (expanding its child nodes)
     final int offset = size * 20;
     md.digest(hash, offset, 20); // Writes onto array hash on the next 20
@@ -126,7 +126,7 @@ public class UTSBag implements Serializable, Bag<UTSBag> {
         upper[size] = n;
         size++;
       } else {
-        processor.fold(new Sum(n));
+        processor.giveFold(new Sum(n));
         // count += n;
       }
     }
@@ -309,10 +309,10 @@ public class UTSBag implements Serializable, Bag<UTSBag> {
   /*
    * (non-Javadoc)
    *
-   * @see apgas.glb.Bag#setProcessor(apgas.glb.Processor)
+   * @see apgas.glb.Bag#setProcessor(apgas.glb.WorkCollector)
    */
   @Override
-  public void setProcessor(Processor p) {
+  public void setWorkCollector(WorkCollector p) {
     processor = p;
   }
 
@@ -339,7 +339,7 @@ public class UTSBag implements Serializable, Bag<UTSBag> {
     final GLBProcessor processor = GLBProcessor.GLBProcessorFactory(500, 1);
 
     final UTSBag taskBag = new UTSBag(64);
-    processor.addTaskBag(taskBag);
+    processor.giveBag(taskBag);
     taskBag.seed(md, 19, depth - 2);
 
     System.out.println("Warmup...");
@@ -348,7 +348,7 @@ public class UTSBag implements Serializable, Bag<UTSBag> {
 
     processor.reset();
     final UTSBag secondBag = new UTSBag(64);
-    processor.addTaskBag(secondBag);
+    processor.giveBag(secondBag);
     secondBag.seed(md, 19, depth);
 
     System.out.println("Starting...");

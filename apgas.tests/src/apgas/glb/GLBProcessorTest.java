@@ -40,7 +40,7 @@ public class GLBProcessorTest {
    *          the sum value to be obtained
    */
   private void sum(int value) {
-    processor.addTaskBag(new SpawnSum(value));
+    processor.giveBag(new SpawnSum(value));
 
     processor.compute();
 
@@ -62,7 +62,7 @@ public class GLBProcessorTest {
    *          the number of Min instance to be generated
    */
   private void min(int minimum, int qtt) {
-    processor.addTaskBag(new SpawnMinimum(minimum, qtt));
+    processor.giveBag(new SpawnMinimum(minimum, qtt));
     processor.compute();
 
     @SuppressWarnings("rawtypes")
@@ -85,7 +85,7 @@ public class GLBProcessorTest {
   /**
    * Tests the fold of 30 Min instances. No work sharing in this case as the
    * number of tasks to process is lower than the workAmount given to the
-   * {@link Processor}
+   * {@link WorkCollector}
    */
   @Test
   public void minTest30() {
@@ -95,7 +95,7 @@ public class GLBProcessorTest {
   /**
    * Tests the fold of 500 Min instances with work stealing being performed as
    * the number of tasks to process exceeds the work amount given to hte
-   * {@link Processor}.
+   * {@link WorkCollector}.
    */
   @Test
   public void minTest500() {
@@ -176,8 +176,8 @@ public class GLBProcessorTest {
     /** Serial Version UID */
     private static final long serialVersionUID = 6180125722875830207L;
 
-    /** Processor in charge of this Bag */
-    Processor processor;
+    /** WorkCollector in charge of this Bag */
+    WorkCollector processor;
 
     /** Number of Sum yet to spawn */
     int toSpawn;
@@ -190,7 +190,7 @@ public class GLBProcessorTest {
     @Override
     public void process(int workAmount) {
       while (!isEmpty() && workAmount > 0) {
-        processor.fold(new Sum(1));
+        processor.giveFold(new Sum(1));
         workAmount--;
         toSpawn--;
       }
@@ -231,10 +231,10 @@ public class GLBProcessorTest {
     /*
      * (non-Javadoc)
      *
-     * @see apgas.glb.Bag#setProcessor(apgas.glb.Processor)
+     * @see apgas.glb.Bag#setProcessor(apgas.glb.WorkCollector)
      */
     @Override
-    public void setProcessor(Processor p) {
+    public void setWorkCollector(WorkCollector p) {
       processor = p;
     }
 
@@ -284,7 +284,7 @@ public class GLBProcessorTest {
     private static final long serialVersionUID = 5783449607642360994L;
     int min;
     int qtt;
-    Processor processor;
+    WorkCollector processor;
 
     /*
      * (non-Javadoc)
@@ -294,12 +294,12 @@ public class GLBProcessorTest {
     @Override
     public void process(int workAmount) {
       while (workAmount > 0 && qtt > 1) {
-        processor.fold(new Min(min + 42));
+        processor.giveFold(new Min(min + 42));
         workAmount--;
         qtt--;
       }
       if (workAmount > 0) {
-        processor.fold(new Min(min));
+        processor.giveFold(new Min(min));
         qtt = 0;
       }
     }
@@ -342,10 +342,10 @@ public class GLBProcessorTest {
     /*
      * (non-Javadoc)
      *
-     * @see apgas.glb.Bag#setProcessor(apgas.glb.Processor)
+     * @see apgas.glb.Bag#setProcessor(apgas.glb.WorkCollector)
      */
     @Override
-    public void setProcessor(Processor p) {
+    public void setWorkCollector(WorkCollector p) {
       processor = p;
     }
 

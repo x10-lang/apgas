@@ -43,7 +43,7 @@ public class UTSTest {
     MD = UTSBag.encoder();
 
     final UTSBag taskBag = new UTSBag(64);
-    processor.addTaskBag(taskBag);
+    processor.giveBag(taskBag);
     taskBag.seed(MD, SEED, TREE_DEPTH - 2);
 
     processor.compute();
@@ -63,7 +63,7 @@ public class UTSTest {
   @Test(timeout = 30000)
   public void UTS() {
     final UTSBag bag = new UTSBag(64);
-    processor.addTaskBag(bag);
+    processor.giveBag(bag);
     bag.seed(MD, SEED, TREE_DEPTH);
 
     processor.compute();

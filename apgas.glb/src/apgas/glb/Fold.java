@@ -5,7 +5,7 @@ package apgas.glb;
 
 /**
  * Fold provides the necessary methods for results to be gathered in a single
- * class by the {@link Processor}.
+ * class by the {@link WorkCollector}.
  * <p>
  * Implementation classes should implement the interface on themselves. Below is
  * a simple example of a {@link Fold} implementation :

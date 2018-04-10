@@ -6,21 +6,21 @@ package apgas.glb;
 import java.io.Serializable;
 
 /**
- * {@link Processor} provides services to the {@link Bag}s it is responsible
+ * {@link WorkCollector} provides services to the {@link Bag}s it is responsible
  * for, namely it enables {@link Bag}s to give it new {@link Bag}s to compute
  * and new {@link Fold} to handle.
  *
  * @author Patrick Finnerty
  *
  */
-public interface Processor {
+public interface WorkCollector {
 
   /**
    * Adds the bag given as parameter to the bags to be processed by the
-   * Processor.
+   * WorkCollector.
    * <p>
    * If an other instance of the same class as the {@link Bag} given as
-   * parameter is already contained by the {@link Processor}, they will be
+   * parameter is already contained by the {@link WorkCollector}, they will be
    * {@link Bag#merge(Bag)}d together. If other cases, the Task bag given as
    * parameter will be kept as is.
    *
@@ -28,9 +28,9 @@ public interface Processor {
    *          the type of {@link Bag} to be added
    *
    * @param b
-   *          the task bag to be added to the Processor
+   *          the task bag to be added to the WorkCollector
    */
-  public <B extends Bag<B> & Serializable> void addTaskBag(B b);
+  public <B extends Bag<B> & Serializable> void giveBag(B b);
 
   /**
    * Folds the given {@link Fold} into an existing {@link Fold} instance of the
@@ -40,7 +40,7 @@ public interface Processor {
    * @param <F>
    *          the type of {@link Fold} to be folded
    * @param fold
-   *          the {@link Fold} to be folded by the {@link Processor}.
+   *          the {@link Fold} to be folded by the {@link WorkCollector}.
    */
-  public <F extends Fold<F> & Serializable> void fold(F fold);
+  public <F extends Fold<F> & Serializable> void giveFold(F fold);
 }

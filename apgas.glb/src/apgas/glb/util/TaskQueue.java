@@ -9,10 +9,11 @@ import java.util.NoSuchElementException;
 
 import apgas.glb.Bag;
 import apgas.glb.Fold;
-import apgas.glb.Processor;
+import apgas.glb.WorkCollector;
 
 /**
- * Class managing the queue of tasks to be performed by the {@link Processor}.
+ * Class managing the queue of tasks to be performed by the
+ * {@link WorkCollector}.
  * <p>
  * The tasks to be performed are stored in an array but behave as a double-ended
  * queue. Two indices, {@link #firstIndex} and {@link #lastIndex} keep track of
@@ -41,7 +42,7 @@ public class TaskQueue implements Bag<TaskQueue>, TaskBag, Serializable {
   /** First free index in the array */
   private int lastIndex;
 
-  private Processor processor = null;
+  private WorkCollector processor = null;
 
   /**
    * Adds the given task to the end of the task queue. If the tasks array
@@ -198,10 +199,10 @@ public class TaskQueue implements Bag<TaskQueue>, TaskBag, Serializable {
   /*
    * (non-Javadoc)
    *
-   * @see apgas.glb.Bag#setProcessor(apgas.glb.Processor)
+   * @see apgas.glb.Bag#setProcessor(apgas.glb.WorkCollector)
    */
   @Override
-  public void setProcessor(Processor p) {
+  public void setWorkCollector(WorkCollector p) {
     processor = p;
   }
 
@@ -222,7 +223,7 @@ public class TaskQueue implements Bag<TaskQueue>, TaskBag, Serializable {
    */
   @Override
   public <B extends Bag<B> & Serializable> void addTaskBag(B bag) {
-    processor.addTaskBag(bag);
+    processor.giveBag(bag);
   }
 
   /*
@@ -232,6 +233,6 @@ public class TaskQueue implements Bag<TaskQueue>, TaskBag, Serializable {
    */
   @Override
   public <F extends Fold<F> & Serializable> void addFold(F fold) {
-    processor.fold(fold);
+    processor.giveFold(fold);
   }
 }

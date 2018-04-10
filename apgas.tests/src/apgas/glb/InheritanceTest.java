@@ -47,7 +47,7 @@ public class InheritanceTest {
   public void inheritanceTest1() {
     final int RESULT = 400;
     final First bag = new First(RESULT);
-    processor.addTaskBag(bag);
+    processor.giveBag(bag);
     processor.compute();
     final Sum s = (Sum) processor.result().iterator().next();
     assertEquals(RESULT, s.sum);
@@ -65,8 +65,8 @@ public class InheritanceTest {
     /** Data shared amongst children */
     public int data;
 
-    /** Processor responsible for processing the tasks spawned */
-    protected Processor processor;
+    /** WorkCollector responsible for processing the tasks spawned */
+    protected WorkCollector processor;
 
     /**
      * Constructor
@@ -103,10 +103,10 @@ public class InheritanceTest {
     /*
      * (non-Javadoc)
      *
-     * @see apgas.glb.Bag#setProcessor(apgas.glb.Processor)
+     * @see apgas.glb.Bag#setProcessor(apgas.glb.WorkCollector)
      */
     @Override
-    public void setProcessor(Processor p) {
+    public void setWorkCollector(WorkCollector p) {
       processor = p;
 
     }
@@ -140,7 +140,7 @@ public class InheritanceTest {
     @Override
     public void process(int workAmount) {
       while (data > 0 && workAmount > 0) {
-        processor.addTaskBag(new Second(1));
+        processor.giveBag(new Second(1));
         data--;
         workAmount--;
       }
@@ -186,7 +186,7 @@ public class InheritanceTest {
     @Override
     public void process(int workAmount) {
       while (data > 0 && workAmount > 0) {
-        processor.fold(new Sum(1));
+        processor.giveFold(new Sum(1));
         data--;
         workAmount--;
       }

@@ -30,7 +30,8 @@ import apgas.util.PlaceLocalObject;
  * @author Patrick Finnerty
  *
  */
-public final class GLBProcessor extends PlaceLocalObject implements Processor {
+public final class GLBProcessor extends PlaceLocalObject
+    implements WorkCollector {
 
   /** Default number of tasks to process before responding to thieves */
   private static final int DEFAULT_WORK_UNIT = 40;
@@ -156,7 +157,7 @@ public final class GLBProcessor extends PlaceLocalObject implements Processor {
       } else {
         d = gift;
       }
-      d.setProcessor(this);
+      d.setWorkCollector(this);
 
       bagsToDo.put(gift.getClass().getName(), d);
     }
@@ -210,11 +211,11 @@ public final class GLBProcessor extends PlaceLocalObject implements Processor {
   /*
    * (non-Javadoc)
    *
-   * @see apgas.glb.Processor#fold(apgas.glb.Fold)
+   * @see apgas.glb.WorkCollector#fold(apgas.glb.Fold)
    */
   @SuppressWarnings("unchecked")
   @Override
-  public synchronized <F extends Fold<F> & Serializable> void fold(F fold) {
+  public synchronized <F extends Fold<F> & Serializable> void giveFold(F fold) {
     /*
      * This method needs to be synchronized since distant places are suceptible
      * to call it when sending their results before quiescing.
@@ -240,7 +241,7 @@ public final class GLBProcessor extends PlaceLocalObject implements Processor {
   @SuppressWarnings("unchecked")
   private <F extends Fold<F> & Serializable> void gather() {
     for (final Fold<?> f : folds.values()) {
-      asyncAt(place(0), () -> fold((F) f));
+      asyncAt(place(0), () -> giveFold((F) f));
     }
     folds.clear();
   }
@@ -298,7 +299,7 @@ public final class GLBProcessor extends PlaceLocalObject implements Processor {
       if (d != null) {
         q.merge(d);
       }
-      q.setProcessor(this);
+      q.setWorkCollector(this);
       bagsToDo.put(q.getClass().getName(), q);
     }
     run();
@@ -441,9 +442,14 @@ public final class GLBProcessor extends PlaceLocalObject implements Processor {
     }
   }
 
+  /*
+   * (non-Javadoc)
+   *
+   * @see apgas.glb.WorkCollector#giveBag(apgas.glb.Bag)
+   */
   @SuppressWarnings("unchecked")
   @Override
-  public <B extends Bag<B> & Serializable> void addTaskBag(B b) {
+  public <B extends Bag<B> & Serializable> void giveBag(B b) {
     final B done = (B) bagsToDo.remove(b.getClass().getName());
     if (done != null) {
       b.merge(done);
@@ -452,7 +458,7 @@ public final class GLBProcessor extends PlaceLocalObject implements Processor {
     if (toDo != null) {
       b.merge(toDo);
     }
-    b.setProcessor(this);
+    b.setWorkCollector(this);
     bagsToDo.put(b.getClass().getName(), b);
   }
 

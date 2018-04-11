@@ -66,6 +66,8 @@ public class UTSBag implements Serializable, Bag<UTSBag> {
   /** Number of nodes in the bag */
   public int size = 0;
 
+  private int count = 0;
+
   /** WorkCollector in charge of computing this UTSBag */
   private WorkCollector processor = null;
 
@@ -102,8 +104,8 @@ public class UTSBag implements Serializable, Bag<UTSBag> {
     if (size >= depth.length) {
       grow();
     }
-    processor.giveFold(new Sum(1));
-    // ++count; // We are exploring one node (expanding its child nodes)
+    // processor.giveFold(new Sum(1));
+    ++count; // We are exploring one node (expanding its child nodes)
     final int offset = size * 20;
     md.digest(hash, offset, 20); // Writes onto array hash on the next 20
     // cells or bytes.
@@ -127,8 +129,8 @@ public class UTSBag implements Serializable, Bag<UTSBag> {
         upper[size] = n;
         size++;
       } else {
-        processor.giveFold(new Sum(n));
-        // count += n;
+        // processor.giveFold(new Sum(n));
+        count += n;
       }
     }
   }
@@ -294,6 +296,10 @@ public class UTSBag implements Serializable, Bag<UTSBag> {
         e.printStackTrace();
       }
       workAmount--;
+    }
+    if (isEmpty()) {
+      processor.giveFold(new Sum(count));
+      count = 0;
     }
   }
 

@@ -13,24 +13,24 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Test class for {@link apgas.glb.GLBProcessor}
+ * Test class for {@link apgas.glb.LoopGLBProcessor}
  *
  * @author Patrick Finnerty
  *
  */
-public class GLBProcessorTest {
+public class LoopGLBProcessorTest {
 
   /**
-   * GLBProcessor instance used for the tests.
+   * LoopGLBProcessor instance used for the tests.
    */
-  private static GLBProcessor processor = null;
+  private static LoopGLBProcessor processor = null;
 
   /**
    * Creates a new processor instance to be used during the tests
    */
   @BeforeClass
   public static void setup() {
-    processor = GLBProcessor.GLBProcessorFactory(50, 1);
+    processor = LoopGLBProcessor.GLBProcessorFactory(50, 1);
   }
 
   /**
@@ -75,7 +75,7 @@ public class GLBProcessorTest {
   }
 
   /**
-   * Resets the GLBProcessor before a new computation is performed
+   * Resets the LoopGLBProcessor before a new computation is performed
    */
   @Before
   public void before() {
@@ -103,7 +103,7 @@ public class GLBProcessorTest {
   }
 
   /**
-   * Tests the behaviour of the {@link GLBProcessor#reset()} method.
+   * Tests the behaviour of the {@link LoopGLBProcessor#reset()} method.
    */
   @Test
   public void resetTest() {
@@ -130,7 +130,7 @@ public class GLBProcessorTest {
 
   /**
    * Tests the fold of 500 Sum of value 1 As 500 is above the work amount to be
-   * processed by the GLBProcessor, steal occurs.
+   * processed by the LoopGLBProcessor, steal occurs.
    */
   @Test
   public void sumTest500() {

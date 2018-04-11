@@ -18,7 +18,7 @@ import apgas.Place;
 import apgas.util.PlaceLocalObject;
 
 /**
- * GLBProcessor proposes a simple API to request for work to be computed using
+ * LoopGLBProcessor proposes a simple API to request for work to be computed using
  * the lifeline based global load balancing framework proposed by APGAS.
  * <p>
  * Initial {@link Bag}s to be processed can be added to this instance by calling
@@ -30,7 +30,7 @@ import apgas.util.PlaceLocalObject;
  * @author Patrick Finnerty
  *
  */
-public final class GLBProcessor extends PlaceLocalObject
+public final class LoopGLBProcessor extends PlaceLocalObject
     implements WorkCollector {
 
   /** Default number of tasks to process before responding to thieves */
@@ -59,7 +59,7 @@ public final class GLBProcessor extends PlaceLocalObject
   @SuppressWarnings("rawtypes")
   private final Map<String, Fold> folds;
 
-  /** Brings the APGAS place id to the class {@link GLBProcessor} */
+  /** Brings the APGAS place id to the class {@link LoopGLBProcessor} */
   private final Place home = here();
 
   /** Number of places available for the computation */
@@ -172,7 +172,7 @@ public final class GLBProcessor extends PlaceLocalObject
    * asking for work from this place.
    * <p>
    * Splits this place's {@link #bagsToDo} and {@link #deal(Place, Bag)}s with
-   * random thieves before {@link GLBProcessor#lifelinedeal(Bag)}ing with the
+   * random thieves before {@link LoopGLBProcessor#lifelinedeal(Bag)}ing with the
    * lifeline thieves.
    *
    * @param <B>the
@@ -247,8 +247,8 @@ public final class GLBProcessor extends PlaceLocalObject
   }
 
   /**
-   * Registers this {@code GLBProcessor} as asking for work from its (remote)
-   * lifeline {@code GLBProcessor} place. If there is only one place, has no
+   * Registers this {@code LoopGLBProcessor} as asking for work from its (remote)
+   * lifeline {@code LoopGLBProcessor} place. If there is only one place, has no
    * effect.
    * <p>
    * The lifeline strategy in the current implementation consists in a single
@@ -470,7 +470,7 @@ public final class GLBProcessor extends PlaceLocalObject
   }
 
   /**
-   * Clears the {@link GLBProcessor} of all its tasks and results and prepares
+   * Clears the {@link LoopGLBProcessor} of all its tasks and results and prepares
    * it for a new computation.
    */
   public void reset() {
@@ -487,7 +487,7 @@ public final class GLBProcessor extends PlaceLocalObject
    * the computation is actually performed.
    *
    * @return a collection containing all the {@link Fold} known to the
-   *         GLBProcessor, every instance being from a different class
+   *         LoopGLBProcessor, every instance being from a different class
    */
   @SuppressWarnings("rawtypes")
   public Collection<Fold> result() {
@@ -495,28 +495,28 @@ public final class GLBProcessor extends PlaceLocalObject
   }
 
   /**
-   * Creates a GLBProcessor (factory method)
+   * Creates a LoopGLBProcessor (factory method)
    * <p>
-   * This yields a GLBProcessor using default configuration.
+   * This yields a LoopGLBProcessor using default configuration.
    *
    * @return a new computing instance
    * @see #GLBProcessorFactory(int, int)
    */
-  public static GLBProcessor GLBProcessorFactory() {
+  public static LoopGLBProcessor GLBProcessorFactory() {
     if (System.getProperty(Configuration.APGAS_PLACES) == null) {
       System.setProperty(Configuration.APGAS_PLACES, DEFAULT_PLACE_COUNT);
     }
 
-    final GLBProcessor glb = PlaceLocalObject.make(places(),
-        () -> new GLBProcessor(DEFAULT_WORK_UNIT,
+    final LoopGLBProcessor glb = PlaceLocalObject.make(places(),
+        () -> new LoopGLBProcessor(DEFAULT_WORK_UNIT,
             DEFAULT_RANDOM_STEAL_ATTEMPTS));
     return glb;
   }
 
   /**
-   * Creates a GLBProcessor (factory method)
+   * Creates a LoopGLBProcessor (factory method)
    * <p>
-   * The returned GLBProcessor will follow the provided configuration that is :
+   * The returned LoopGLBProcessor will follow the provided configuration that is :
    * <ul>
    * <li>The number of work to be processed by {@link Bag#process(int)} before
    * dealing with potential thieves
@@ -532,14 +532,14 @@ public final class GLBProcessor extends PlaceLocalObject
    *          <em>positive or nil</em>
    * @return a new computing instance
    */
-  public static GLBProcessor GLBProcessorFactory(int workUnit,
+  public static LoopGLBProcessor GLBProcessorFactory(int workUnit,
       int stealAttempts) {
     if (System.getProperty(Configuration.APGAS_PLACES) == null) {
       System.setProperty(Configuration.APGAS_PLACES, DEFAULT_PLACE_COUNT);
     }
 
-    final GLBProcessor glb = PlaceLocalObject.make(places(),
-        () -> new GLBProcessor(workUnit, stealAttempts));
+    final LoopGLBProcessor glb = PlaceLocalObject.make(places(),
+        () -> new LoopGLBProcessor(workUnit, stealAttempts));
     return glb;
   }
 
@@ -552,7 +552,7 @@ public final class GLBProcessor extends PlaceLocalObject
    *          number of random steals attempts before resaulting to the lifeline
    *          thief scheme
    */
-  private GLBProcessor(int workUnit, int randomStealAttempts) {
+  private LoopGLBProcessor(int workUnit, int randomStealAttempts) {
     WORK_UNIT = workUnit;
     RANDOM_STEAL_ATTEMPTS = randomStealAttempts;
     bagsToDo = new HashMap<>();

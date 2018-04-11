@@ -11,7 +11,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import apgas.glb.GLBProcessor;
+import apgas.glb.LoopGLBProcessor;
 
 /**
  * @author Patrick Finnerty
@@ -30,8 +30,8 @@ public class UTSTest {
    */
   static final int EXPECTED_NODES = 264459392;
 
-  /** GLBProcessor used to perform the computation */
-  static GLBProcessor processor;
+  /** LoopGLBProcessor used to perform the computation */
+  static LoopGLBProcessor processor;
 
   /** Message dialect used by UTS computation to generate the tree */
   static MessageDigest MD;
@@ -39,7 +39,7 @@ public class UTSTest {
   /** Setup method */
   @BeforeClass
   public static void setup() {
-    processor = GLBProcessor.GLBProcessorFactory(500, 1);
+    processor = LoopGLBProcessor.GLBProcessorFactory(500, 1);
     MD = UTSBag.encoder();
 
     final UTSBag taskBag = new UTSBag(64);

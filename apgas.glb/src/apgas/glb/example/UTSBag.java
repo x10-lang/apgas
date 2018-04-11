@@ -9,7 +9,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 import apgas.glb.Bag;
-import apgas.glb.GLBProcessor;
+import apgas.glb.LoopGLBProcessor;
 import apgas.glb.WorkCollector;
 
 /**
@@ -321,7 +321,7 @@ public class UTSBag implements Serializable, Bag<UTSBag> {
   }
 
   /**
-   * Launches the computation using the {@link apgas.glb.GLBProcessor}
+   * Launches the computation using the {@link apgas.glb.LoopGLBProcessor}
    *
    * @param args
    *          one argument can be specified : the depth of the tree to explore.
@@ -336,7 +336,7 @@ public class UTSBag implements Serializable, Bag<UTSBag> {
 
     final MessageDigest md = encoder();
 
-    final GLBProcessor processor = GLBProcessor.GLBProcessorFactory(500, 1);
+    final LoopGLBProcessor processor = LoopGLBProcessor.GLBProcessorFactory(500, 1);
 
     final UTSBag taskBag = new UTSBag(64);
     processor.giveBag(taskBag);

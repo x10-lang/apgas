@@ -129,7 +129,7 @@ public class TaskQueue implements Bag<TaskQueue>, TaskBag, Serializable {
   /**
    * Removes half of the current tasks of this tasks queue and return the
    * collection of the removed element (presumably to be
-   * {@link #merge(TaskQueue)}d in an other instance of GLBProcessor.
+   * {@link #merge(TaskQueue)}d in an other instance of LoopGLBProcessor.
    *
    * @return Collection of Tasks removed from this task queue.
    */

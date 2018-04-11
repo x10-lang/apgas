@@ -20,14 +20,14 @@ import apgas.glb.example.Sum;
 public class InheritanceTest {
 
   /** Computation ressource used for the test */
-  static GLBProcessor processor;
+  static LoopGLBProcessor processor;
 
   /**
-   * Prepares a GLBProcessor for computation
+   * Prepares a LoopGLBProcessor for computation
    */
   @BeforeClass
   public static void setUpBeforeClass() {
-    processor = GLBProcessor.GLBProcessorFactory(50, 1);
+    processor = LoopGLBProcessor.GLBProcessorFactory(50, 1);
   }
 
   /**

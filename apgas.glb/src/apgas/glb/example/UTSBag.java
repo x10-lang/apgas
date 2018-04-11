@@ -9,7 +9,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 import apgas.glb.Bag;
-import apgas.glb.LoopGLBProcessor;
+import apgas.glb.GLBProcessor;
+import apgas.glb.GLBProcessorFactory;
 import apgas.glb.WorkCollector;
 
 /**
@@ -336,10 +337,10 @@ public class UTSBag implements Serializable, Bag<UTSBag> {
 
     final MessageDigest md = encoder();
 
-    final LoopGLBProcessor processor = LoopGLBProcessor.GLBProcessorFactory(500, 1);
+    final GLBProcessor processor = GLBProcessorFactory.LoopGLBProcessor(500, 1);
 
     final UTSBag taskBag = new UTSBag(64);
-    processor.giveBag(taskBag);
+    processor.addBag(taskBag);
     taskBag.seed(md, 19, depth - 2);
 
     System.out.println("Warmup...");
@@ -348,7 +349,7 @@ public class UTSBag implements Serializable, Bag<UTSBag> {
 
     processor.reset();
     final UTSBag secondBag = new UTSBag(64);
-    processor.giveBag(secondBag);
+    processor.addBag(secondBag);
     secondBag.seed(md, 19, depth);
 
     System.out.println("Starting...");

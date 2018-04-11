@@ -11,7 +11,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import apgas.glb.LoopGLBProcessor;
+import apgas.glb.GLBProcessor;
+import apgas.glb.GLBProcessorFactory;
 
 /**
  * @author Patrick Finnerty
@@ -31,7 +32,7 @@ public class UTSTest {
   static final int EXPECTED_NODES = 264459392;
 
   /** LoopGLBProcessor used to perform the computation */
-  static LoopGLBProcessor processor;
+  static GLBProcessor processor;
 
   /** Message dialect used by UTS computation to generate the tree */
   static MessageDigest MD;
@@ -39,11 +40,11 @@ public class UTSTest {
   /** Setup method */
   @BeforeClass
   public static void setup() {
-    processor = LoopGLBProcessor.GLBProcessorFactory(500, 1);
+    processor = GLBProcessorFactory.LoopGLBProcessor(500, 1);
     MD = UTSBag.encoder();
 
     final UTSBag taskBag = new UTSBag(64);
-    processor.giveBag(taskBag);
+    processor.addBag(taskBag);
     taskBag.seed(MD, SEED, TREE_DEPTH - 2);
 
     processor.compute();
@@ -60,10 +61,10 @@ public class UTSTest {
    * Tests the termination in reasonable time of the unbalanced tree search
    * computation
    */
-  @Test(timeout = 30000)
+  @Test(timeout = 40000)
   public void UTS() {
     final UTSBag bag = new UTSBag(64);
-    processor.giveBag(bag);
+    processor.addBag(bag);
     bag.seed(MD, SEED, TREE_DEPTH);
 
     processor.compute();

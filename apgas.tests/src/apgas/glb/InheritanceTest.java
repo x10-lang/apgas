@@ -20,14 +20,14 @@ import apgas.glb.example.Sum;
 public class InheritanceTest {
 
   /** Computation ressource used for the test */
-  static LoopGLBProcessor processor;
+  static GLBProcessor processor;
 
   /**
    * Prepares a LoopGLBProcessor for computation
    */
   @BeforeClass
   public static void setUpBeforeClass() {
-    processor = LoopGLBProcessor.GLBProcessorFactory(50, 1);
+    processor = GLBProcessorFactory.LoopGLBProcessor(50, 1);
   }
 
   /**
@@ -47,7 +47,7 @@ public class InheritanceTest {
   public void inheritanceTest1() {
     final int RESULT = 400;
     final First bag = new First(RESULT);
-    processor.giveBag(bag);
+    processor.addBag(bag);
     processor.compute();
     final Sum s = (Sum) processor.result().iterator().next();
     assertEquals(RESULT, s.sum);

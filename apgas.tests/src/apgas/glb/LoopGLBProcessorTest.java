@@ -23,14 +23,14 @@ public class LoopGLBProcessorTest {
   /**
    * LoopGLBProcessor instance used for the tests.
    */
-  private static LoopGLBProcessor processor = null;
+  private static GLBProcessor processor = null;
 
   /**
    * Creates a new processor instance to be used during the tests
    */
   @BeforeClass
   public static void setup() {
-    processor = LoopGLBProcessor.GLBProcessorFactory(50, 1);
+    processor = GLBProcessorFactory.LoopGLBProcessor(50, 1);
   }
 
   /**
@@ -40,7 +40,7 @@ public class LoopGLBProcessorTest {
    *          the sum value to be obtained
    */
   private void sum(int value) {
-    processor.giveBag(new SpawnSum(value));
+    processor.addBag(new SpawnSum(value));
 
     processor.compute();
 
@@ -62,7 +62,7 @@ public class LoopGLBProcessorTest {
    *          the number of Min instance to be generated
    */
   private void min(int minimum, int qtt) {
-    processor.giveBag(new SpawnMinimum(minimum, qtt));
+    processor.addBag(new SpawnMinimum(minimum, qtt));
     processor.compute();
 
     @SuppressWarnings("rawtypes")

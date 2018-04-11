@@ -13,13 +13,12 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import apgas.Configuration;
 import apgas.Place;
 import apgas.util.PlaceLocalObject;
 
 /**
- * LoopGLBProcessor proposes a simple API to request for work to be computed using
- * the lifeline based global load balancing framework proposed by APGAS.
+ * LoopGLBProcessor proposes a simple API to request for work to be computed
+ * using the lifeline based global load balancing framework proposed by APGAS.
  * <p>
  * Initial {@link Bag}s to be processed can be added to this instance by calling
  * {@link #addTaskBag(Bag)}. Computation is launched using the
@@ -30,22 +29,8 @@ import apgas.util.PlaceLocalObject;
  * @author Patrick Finnerty
  *
  */
-public final class LoopGLBProcessor extends PlaceLocalObject
-    implements WorkCollector {
-
-  /** Default number of tasks to process before responding to thieves */
-  private static final int DEFAULT_WORK_UNIT = 40;
-
-  /**
-   * Number of attempted random steals before the place skips to its lifeline
-   * steal strategy
-   */
-  private static final int DEFAULT_RANDOM_STEAL_ATTEMPTS = 1;
-
-  /**
-   * Default number of places on which the computation is going to take place
-   */
-  private static final String DEFAULT_PLACE_COUNT = "4";
+final class LoopGLBProcessor extends PlaceLocalObject
+    implements WorkCollector, GLBProcessor {
 
   /** Collection of tasks bags to be processed */
   @SuppressWarnings("rawtypes")
@@ -172,8 +157,8 @@ public final class LoopGLBProcessor extends PlaceLocalObject
    * asking for work from this place.
    * <p>
    * Splits this place's {@link #bagsToDo} and {@link #deal(Place, Bag)}s with
-   * random thieves before {@link LoopGLBProcessor#lifelinedeal(Bag)}ing with the
-   * lifeline thieves.
+   * random thieves before {@link LoopGLBProcessor#lifelinedeal(Bag)}ing with
+   * the lifeline thieves.
    *
    * @param <B>the
    *          type of offered work given to thieves
@@ -247,9 +232,9 @@ public final class LoopGLBProcessor extends PlaceLocalObject
   }
 
   /**
-   * Registers this {@code LoopGLBProcessor} as asking for work from its (remote)
-   * lifeline {@code LoopGLBProcessor} place. If there is only one place, has no
-   * effect.
+   * Registers this {@code LoopGLBProcessor} as asking for work from its
+   * (remote) lifeline {@code LoopGLBProcessor} place. If there is only one
+   * place, has no effect.
    * <p>
    * The lifeline strategy in the current implementation consists in a single
    * directed loop including all the nodes. That is :
@@ -463,6 +448,7 @@ public final class LoopGLBProcessor extends PlaceLocalObject
   }
 
   /** Launches the computation of the given work */
+  @Override
   public void compute() {
     finish(() -> {
       run();
@@ -470,9 +456,10 @@ public final class LoopGLBProcessor extends PlaceLocalObject
   }
 
   /**
-   * Clears the {@link LoopGLBProcessor} of all its tasks and results and prepares
-   * it for a new computation.
+   * Clears the {@link LoopGLBProcessor} of all its tasks and results and
+   * prepares it for a new computation.
    */
+  @Override
   public void reset() {
     finish(() -> {
       for (final Place p : places()) {
@@ -489,58 +476,10 @@ public final class LoopGLBProcessor extends PlaceLocalObject
    * @return a collection containing all the {@link Fold} known to the
    *         LoopGLBProcessor, every instance being from a different class
    */
+  @Override
   @SuppressWarnings("rawtypes")
   public Collection<Fold> result() {
     return folds.values();
-  }
-
-  /**
-   * Creates a LoopGLBProcessor (factory method)
-   * <p>
-   * This yields a LoopGLBProcessor using default configuration.
-   *
-   * @return a new computing instance
-   * @see #GLBProcessorFactory(int, int)
-   */
-  public static LoopGLBProcessor GLBProcessorFactory() {
-    if (System.getProperty(Configuration.APGAS_PLACES) == null) {
-      System.setProperty(Configuration.APGAS_PLACES, DEFAULT_PLACE_COUNT);
-    }
-
-    final LoopGLBProcessor glb = PlaceLocalObject.make(places(),
-        () -> new LoopGLBProcessor(DEFAULT_WORK_UNIT,
-            DEFAULT_RANDOM_STEAL_ATTEMPTS));
-    return glb;
-  }
-
-  /**
-   * Creates a LoopGLBProcessor (factory method)
-   * <p>
-   * The returned LoopGLBProcessor will follow the provided configuration that is :
-   * <ul>
-   * <li>The number of work to be processed by {@link Bag#process(int)} before
-   * dealing with potential thieves
-   * <li>The number of random steal attempts performed before turning to the the
-   * lifeline-steal scheme.
-   * </ul>
-   *
-   * @param workUnit
-   *          work amount processed by a place before dealing with thieves,
-   *          <em>strictly positive</em>
-   * @param stealAttempts
-   *          number of steal attempts performed by a place before halting,
-   *          <em>positive or nil</em>
-   * @return a new computing instance
-   */
-  public static LoopGLBProcessor GLBProcessorFactory(int workUnit,
-      int stealAttempts) {
-    if (System.getProperty(Configuration.APGAS_PLACES) == null) {
-      System.setProperty(Configuration.APGAS_PLACES, DEFAULT_PLACE_COUNT);
-    }
-
-    final LoopGLBProcessor glb = PlaceLocalObject.make(places(),
-        () -> new LoopGLBProcessor(workUnit, stealAttempts));
-    return glb;
   }
 
   /**
@@ -552,11 +491,22 @@ public final class LoopGLBProcessor extends PlaceLocalObject
    *          number of random steals attempts before resaulting to the lifeline
    *          thief scheme
    */
-  private LoopGLBProcessor(int workUnit, int randomStealAttempts) {
+  LoopGLBProcessor(int workUnit, int randomStealAttempts) {
     WORK_UNIT = workUnit;
     RANDOM_STEAL_ATTEMPTS = randomStealAttempts;
     bagsToDo = new HashMap<>();
     bagsDone = new HashMap<>();
     folds = new HashMap<>();
+  }
+
+  /*
+   * (non-Javadoc)
+   *
+   * @see apgas.glb.GLBProcessor#addWork(apgas.glb.Bag)
+   */
+  @Override
+  public <B extends Bag<B> & Serializable> void addBag(B bag) {
+    bag.setWorkCollector(this);
+    bagsToDo.put(bag.getClass().getName(), bag);
   }
 }

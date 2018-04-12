@@ -58,10 +58,11 @@ public class UTSTest {
   }
 
   /**
-   * Tests the termination in reasonable time of the unbalanced tree search
-   * computation
+   * Tests the termination of the unbalanced tree search computation. The
+   * timeout is set such that if there is an issue with the GLB procedures which
+   * blocks a thread, the test will fail thanks to the timeout.
    */
-  @Test(timeout = 40000)
+  @Test(timeout = 20000)
   public void UTS() {
     final UTSBag bag = new UTSBag(64);
     processor.addBag(bag);

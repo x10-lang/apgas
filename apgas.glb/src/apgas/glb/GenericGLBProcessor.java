@@ -104,7 +104,9 @@ final class GenericGLBProcessor extends PlaceLocalObject
   /** Lifeline strategy instance */
   private final LifelineStrategy lifelineStrategy;
 
-  private final Semaphore lifelineSem = new Semaphore(0);
+  private final Semaphore lifelineSem = new Semaphore(0, false);
+
+  private final Semaphore workSplit = new Semaphore(1);
 
   /**
    * Puts this local place to a ready to compute state.
@@ -125,6 +127,8 @@ final class GenericGLBProcessor extends PlaceLocalObject
     if (home.id != 0) {
       lifelineSem.release();
     }
+    workSplit.drainPermits();
+    workSplit.release();
   }
 
   /**
@@ -149,6 +153,8 @@ final class GenericGLBProcessor extends PlaceLocalObject
     // We are presumably receiving work from place p. Therefore this place
     // should be in state 'p'.
     assert state == p.id;
+    System.err.println(p + " answers " + home);
+
     // If place p couldn't share work with this place, the given q is null. A
     // check is therefore necessary.
     if (gift != null) {
@@ -181,7 +187,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
    *          type of offered work given to thieves
    */
   private <B extends Bag<B> & Serializable> void distribute() {
-    if (places == 1) {
+    if (places == 1 || bagsToDo.isEmpty()) {
       return;
     }
     Place p;
@@ -199,9 +205,14 @@ final class GenericGLBProcessor extends PlaceLocalObject
       // TODO Check if there is any work available ?
       final Place h = home;
       final Place d = p;
+      try { // TODO unsafe ?
+        workSplit.acquire();
+      } catch (final InterruptedException e) {
+      }
       finish(() -> asyncAt(d, () -> {
         lifelineReply(h);
       }));
+      asyncAt(p, () -> run());
     }
   }
 
@@ -256,8 +267,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
    *          the work to be given to the place
    */
   @SuppressWarnings("unchecked")
-  private synchronized <B extends Bag<B> & Serializable> void lifelineDeal(
-      B q) {
+  private <B extends Bag<B> & Serializable> void lifelineDeal(B q) {
     if (q != null) {
       final B d = (B) bagsDone.remove(q.getClass().getName()); // Possibly null
       if (d != null) {
@@ -266,7 +276,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
       q.setWorkCollector(this);
       bagsToDo.put(q.getClass().getName(), q);
     }
-    run();
+    System.err.println(home + " work received");
   }
 
   /**
@@ -283,6 +293,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
   private void lifelineReply(Place answer) {
     if (lifelineSem.tryAcquire()) {
       final Place h = home;
+      System.err.println(answer + " will give to " + home);
       asyncAt(answer, () -> {
         lifelineSend(h);
       });
@@ -293,6 +304,13 @@ final class GenericGLBProcessor extends PlaceLocalObject
           });
         }
       }
+    } else {
+      // Some other place already gave some work, the answer place should keep
+      // going
+      System.err.println(answer + " is turned down by " + home);
+      asyncAt(answer, () -> {
+        workSplit.release();
+      });
     }
   }
 
@@ -309,7 +327,8 @@ final class GenericGLBProcessor extends PlaceLocalObject
     final Bag<?> bag = bagsToDo.get(key);
     @SuppressWarnings("unchecked")
     final B toGive = (B) bag.split();
-
+    workSplit.release();
+    System.err.println(home + " sending to " + destination);
     asyncAt(destination, () -> {
       lifelineDeal(toGive);
     });
@@ -337,6 +356,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
       // Impossible to perform a steal.
       return;
     }
+    System.err.println(home + " set lifelines");
 
     // Sets lifeline
     final Place h = home;
@@ -368,6 +388,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
       // the main 'run' loop by the first 'distribute' call.
       if (state == -1) {
         randomThieves.add(p);
+        System.err.println(p + " waiting for " + home);
         return;
       }
     }
@@ -397,6 +418,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
       state = -1;
     }
     while (!bagsToDo.isEmpty()) {
+      System.err.println(home + " processing");
       while (!bagsToDo.isEmpty()) {
         final String key = bagsToDo.keySet().iterator().next();
         final Bag<?> bag = bagsToDo.get(key);
@@ -569,6 +591,14 @@ final class GenericGLBProcessor extends PlaceLocalObject
     folds = new HashMap<>();
     lifelines = strategy.lifeline(home.id, places);
     lifelineStrategy = strategy;
-    clear();
+
+    for (final int i : lifelineStrategy.reverseLifeline(home.id, places)) {
+      if (i != 0) {
+        lifelineThieves.add(place(i));
+      }
+    }
+    if (home.id != 0) {
+      lifelineSem.release();
+    }
   }
 }

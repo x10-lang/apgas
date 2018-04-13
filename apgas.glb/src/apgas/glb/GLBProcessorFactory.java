@@ -5,6 +5,8 @@ package apgas.glb;
 
 import static apgas.Constructs.*;
 
+import java.io.Serializable;
+
 import apgas.Configuration;
 import apgas.util.PlaceLocalObject;
 
@@ -77,4 +79,27 @@ public class GLBProcessorFactory {
     return glb;
   }
 
+  /**
+   * Creates a generic GLBProcessor following the given workUnit stealAttempts
+   * and strategy provided
+   *
+   * @param workUnit
+   *          amount of work to process before distributing work
+   * @param stealAttempts
+   *          number of random steals attempted before resulting to the lifeline
+   *          scheme
+   * @param strategy
+   *          the lifelines strategy to be used in this GLBProcessor instance
+   * @return a new computing instance
+   */
+  public static <S extends LifelineStrategy & Serializable> GLBProcessor GLBProcessor(
+      int workUnit, int stealAttempts, S strategy) {
+    if (System.getProperty(Configuration.APGAS_PLACES) == null) {
+      System.setProperty(Configuration.APGAS_PLACES, DEFAULT_PLACE_COUNT);
+    }
+
+    final GLBProcessor glb = PlaceLocalObject.make(places(),
+        () -> new GenericGLBProcessor(workUnit, stealAttempts, strategy));
+    return glb;
+  }
 }

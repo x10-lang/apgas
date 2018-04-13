@@ -11,6 +11,7 @@ import java.security.NoSuchAlgorithmException;
 import apgas.glb.Bag;
 import apgas.glb.GLBProcessor;
 import apgas.glb.GLBProcessorFactory;
+import apgas.glb.HypercubeStrategy;
 import apgas.glb.WorkCollector;
 
 /**
@@ -343,7 +344,8 @@ public class UTSBag implements Serializable, Bag<UTSBag> {
 
     final MessageDigest md = encoder();
 
-    final GLBProcessor processor = GLBProcessorFactory.LoopGLBProcessor(500, 1);
+    final GLBProcessor processor = GLBProcessorFactory.GLBProcessor(500, 1,
+        new HypercubeStrategy());
 
     final UTSBag taskBag = new UTSBag(64);
     processor.addBag(taskBag);

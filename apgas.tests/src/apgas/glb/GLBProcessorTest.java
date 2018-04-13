@@ -6,31 +6,38 @@ package apgas.glb;
 import static org.junit.Assert.*;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Collection;
 
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
- * Test class for {@link apgas.glb.LoopGLBProcessor}
+ * Test class for {@link apgas.glb.LoopGLBProcessor} and
+ * {@link GenericGLBProcessor}, implementations of interface
+ * {@link GLBProcessor}
  *
  * @author Patrick Finnerty
  *
  */
-public class LoopGLBProcessorTest {
+@RunWith(Parameterized.class)
+public class GLBProcessorTest {
 
   /**
    * LoopGLBProcessor instance used for the tests.
    */
-  private static GLBProcessor processor = null;
+  private GLBProcessor processor = null;
 
   /**
    * Creates a new processor instance to be used during the tests
+   *
+   * @param computer
+   *          GLBProcessor instance to be tested
    */
-  @BeforeClass
-  public static void setup() {
-    processor = GLBProcessorFactory.LoopGLBProcessor(50, 1);
+  public GLBProcessorTest(GLBProcessor computer) {
+    processor = computer;
   }
 
   /**
@@ -87,7 +94,7 @@ public class LoopGLBProcessorTest {
    * number of tasks to process is lower than the workAmount given to the
    * {@link WorkCollector}
    */
-  @Test
+  @Test(timeout = 5000)
   public void minTest30() {
     min(0, 30);
   }
@@ -97,7 +104,7 @@ public class LoopGLBProcessorTest {
    * the number of tasks to process exceeds the work amount given to hte
    * {@link WorkCollector}.
    */
-  @Test
+  @Test(timeout = 5000)
   public void minTest500() {
     min(0, 500);
   }
@@ -105,7 +112,7 @@ public class LoopGLBProcessorTest {
   /**
    * Tests the behaviour of the {@link LoopGLBProcessor#reset()} method.
    */
-  @Test
+  @Test(timeout = 5000)
   public void resetTest() {
     min(0, 30);
     processor.reset();
@@ -123,7 +130,7 @@ public class LoopGLBProcessorTest {
   /**
    * Test the display of one display task
    */
-  @Test
+  @Test(timeout = 5000)
   public void sumTest30() {
     sum(30);
   }
@@ -132,9 +139,22 @@ public class LoopGLBProcessorTest {
    * Tests the fold of 500 Sum of value 1 As 500 is above the work amount to be
    * processed by the LoopGLBProcessor, steal occurs.
    */
-  @Test
+  @Test(timeout = 5000)
   public void sumTest500() {
     sum(500);
+  }
+
+  /**
+   * Yields the {@link GLBProcessor} implementation to be tested.
+   *
+   * @return collection of GLBProcessor
+   */
+  @Parameterized.Parameters
+  public static Collection<Object[]> toTest() {
+    return Arrays.asList(
+        new Object[] { GLBProcessorFactory.LoopGLBProcessor(50, 1) },
+        new Object[] {
+            GLBProcessorFactory.GLBProcessor(50, 1, new HypercubeStrategy()) });
   }
 
   /**

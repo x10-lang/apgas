@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Semaphore;
 
 import apgas.Place;
 import apgas.util.PlaceLocalObject;
@@ -71,10 +72,13 @@ final class GenericGLBProcessor extends PlaceLocalObject
   private final ConcurrentLinkedQueue<Place> randomThieves = new ConcurrentLinkedQueue<>();
 
   /**
-   * List of the lifeline thieves
+   * List of the lifeline thieves that have quiesced and are waiting to be waken
+   * up
    *
-   * @see #lifelinesteal()
-   * @see #lifelinedeal(Bag)
+   * @see #lifelineSteal()
+   * @see #lifelineReply(Place)
+   * @see #lifelineSend(Place)
+   * @see #lifelineDeal(Bag)
    */
   private final ConcurrentLinkedQueue<Place> lifelineThieves = new ConcurrentLinkedQueue<>();
 
@@ -87,7 +91,6 @@ final class GenericGLBProcessor extends PlaceLocalObject
   /**
    * Indicates the state of the place at any given time.
    * <ul>
-   * <li><em>-3</em> : waiting for a lifeline answer
    * <li><em>-2</em> : inactive
    * <li><em>-1</em> : running
    * <li><em>p</em> in range [0,{@code places}] : stealing from place of id
@@ -98,7 +101,10 @@ final class GenericGLBProcessor extends PlaceLocalObject
    */
   private int state = -2;
 
+  /** Lifeline strategy instance */
   private final LifelineStrategy lifelineStrategy;
+
+  private final Semaphore lifelineSem = new Semaphore(0);
 
   /**
    * Puts this local place to a ready to compute state.
@@ -113,6 +119,11 @@ final class GenericGLBProcessor extends PlaceLocalObject
       if (i != 0) {
         lifelineThieves.add(place(i));
       }
+    }
+
+    lifelineSem.drainPermits();
+    if (home.id != 0) {
+      lifelineSem.release();
     }
   }
 
@@ -258,18 +269,40 @@ final class GenericGLBProcessor extends PlaceLocalObject
     run();
   }
 
+  /**
+   * Method to call to reply to a lifeline thief. If the caller is the first to
+   * reply, calls the {@link #lifelineSend} method to transmit the work to
+   * share. Also removes the lifeline established on other places.
+   * <p>
+   * If an other place manages to call this method before its lifeline is
+   * removed, will return immediately thanks to a non blocking semaphore.
+   *
+   * @param answer
+   *          the place willing to give work to this place
+   */
   private void lifelineReply(Place answer) {
-    synchronized (this) {
-      if (state != -2) {
-        state = answer.id;
-        final Place h = home;
-        asyncAt(answer, () -> {
-          lifelineSend(h);
-        });
+    if (lifelineSem.tryAcquire()) {
+      final Place h = home;
+      asyncAt(answer, () -> {
+        lifelineSend(h);
+      });
+      for (final int i : lifelineStrategy.reverseLifeline(home.id, places)) {
+        if (i != answer.id) {
+          uncountedAsyncAt(place(i), () -> {
+            lifelineThieves.remove(h);
+          });
+        }
       }
     }
   }
 
+  /**
+   * Splits this place bag, gives the work to the place given as parameter and
+   * launches its computation again.
+   *
+   * @param destination
+   *          the destination of the work to be given
+   */
   private <B extends Bag<B> & Serializable> void lifelineSend(
       Place destination) {
     final String key = bagsToDo.keySet().iterator().next();
@@ -386,7 +419,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
     }
 
     synchronized (this) {
-      state = -2; // TODO -3 ?
+      state = -2;
     }
 
     // Sending null work to all the thieves
@@ -404,6 +437,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
     }
 
     // Establishing lifeline
+    lifelineSem.release();
     lifelineSteal();
     System.err.println(home + " stopping");
   }

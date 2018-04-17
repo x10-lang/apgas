@@ -22,11 +22,25 @@ public class HypercubeStrategy implements LifelineStrategy, Serializable {
    * @see apgas.glb.LifelineStrategy#lifeline(int, int)
    */
   @Override
-  public int[] lifeline(int home, int nbPlaces) {
-    // TODO make a real implementation
-    home = (nbPlaces + home - 1) % nbPlaces;
-    final int toReturn[] = new int[1];
-    toReturn[0] = home;
+  public int[] lifeline(final int home, final int nbPlaces) {
+    int count = 0;
+    int mask = 1;
+    int l;
+    while ((l = home ^ mask) < nbPlaces) {
+      count++;
+      mask *= 2;
+    }
+
+    final int toReturn[] = new int[count];
+
+    mask = 1;
+    int index = 0;
+    while ((l = home ^ mask) < nbPlaces) {
+      toReturn[index] = l;
+      index++;
+      mask *= 2;
+    }
+
     return toReturn;
   }
 
@@ -37,11 +51,7 @@ public class HypercubeStrategy implements LifelineStrategy, Serializable {
    */
   @Override
   public int[] reverseLifeline(int target, int nbPlaces) {
-    // TODO make a real implementation
-    target = (target + 1) % nbPlaces;
-    final int toReturn[] = new int[1];
-    toReturn[0] = target;
-    return toReturn;
+    return lifeline(target, nbPlaces);
   }
 
 }

@@ -106,16 +106,16 @@ public class StrategyTest {
     // DFS algorithm
     path.push(new Integer(i));
     nodeState[i] = 1; // Node i is visited
-    while (!path.isEmpty()) {
+    outerloop: while (!path.isEmpty()) {
       final int n = path.lastElement();
       for (final int j : strategy.lifeline(n, GRAPH_SIZE)) {
         if (nodeState[j] == 0) {
           path.push(new Integer(j));
           nodeState[j] = 1; // Node j visited
-          continue;
+          continue outerloop;
         }
-        path.pop();
       }
+      path.pop();
     }
 
     // Checking all the nodes were visited

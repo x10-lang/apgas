@@ -44,17 +44,11 @@ final class GenericGLBProcessor extends PlaceLocalObject
   @SuppressWarnings("rawtypes")
   private final Map<String, Fold> folds;
 
-  /** Brings the APGAS place id to the class {@link GenericGLBProcessor} */
+  /** Brings the APGAS place id to the class {@link LoopGLBProcessor} */
   private final Place home = here();
 
   /** Number of places available for the computation */
   private final int places = places().size();
-
-  /**
-   * Array of int containing the id's of the places on which lifelines can be
-   * established
-   */
-  private final int lifelines[];
 
   /**
    * Random generator used when thieving a random place
@@ -69,18 +63,19 @@ final class GenericGLBProcessor extends PlaceLocalObject
    * List of thieves that asked for work when the current place was performing
    * computation
    */
-  private final ConcurrentLinkedQueue<Place> randomThieves = new ConcurrentLinkedQueue<>();
+  private final ConcurrentLinkedQueue<Place> thieves = new ConcurrentLinkedQueue<>();
+
+  /** List of lifeline thieves waiting for work */
+  private final ConcurrentLinkedQueue<Place> lifelineThieves = new ConcurrentLinkedQueue<>();
+
+  /** id's of the places on which this place will establish its lifelines */
+  private final int lifelines[];
 
   /**
-   * List of the lifeline thieves that have quiesced and are waiting to be waken
-   * up
-   *
-   * @see #lifelineSteal()
-   * @see #lifelineReply(Place)
-   * @see #lifelineSend(Place)
-   * @see #lifelineDeal(Bag)
+   * id's of the places which are susceptible to establish their lifeline on
+   * this place
    */
-  private final ConcurrentLinkedQueue<Place> lifelineThieves = new ConcurrentLinkedQueue<>();
+  private final int incomingLifelines[];
 
   /** Number of random steal attempts performed by this place */
   private final int RANDOM_STEAL_ATTEMPTS;
@@ -101,34 +96,30 @@ final class GenericGLBProcessor extends PlaceLocalObject
    */
   private int state = -2;
 
-  /** Lifeline strategy instance */
-  private final LifelineStrategy lifelineStrategy;
+  private final Semaphore workSplit = new Semaphore(0, false);
 
-  private final Semaphore lifelineSem = new Semaphore(0, false);
-
-  private final Semaphore workSplit = new Semaphore(1);
+  private final Semaphore lifelineAnswer = new Semaphore(0, false);
 
   /**
    * Puts this local place to a ready to compute state.
    */
   private void clear() {
-    randomThieves.clear();
-    state = -2;
-    bagsToDo.clear();
-    bagsDone.clear();
-    folds.clear();
-    for (final int i : lifelineStrategy.reverseLifeline(home.id, places)) {
+    thieves.clear();
+    lifelineThieves.clear();
+    for (final int i : incomingLifelines) {
       if (i != 0) {
         lifelineThieves.add(place(i));
       }
     }
-
-    lifelineSem.drainPermits();
-    if (home.id != 0) {
-      lifelineSem.release();
-    }
+    state = -2;
+    bagsToDo.clear();
+    bagsDone.clear();
+    folds.clear();
     workSplit.drainPermits();
-    workSplit.release();
+    lifelineAnswer.drainPermits();
+    if (home.id != 0) {
+      lifelineAnswer.release();
+    }
   }
 
   /**
@@ -153,8 +144,6 @@ final class GenericGLBProcessor extends PlaceLocalObject
     // We are presumably receiving work from place p. Therefore this place
     // should be in state 'p'.
     assert state == p.id;
-    System.err.println(p + " answers " + home);
-
     // If place p couldn't share work with this place, the given q is null. A
     // check is therefore necessary.
     if (gift != null) {
@@ -180,40 +169,38 @@ final class GenericGLBProcessor extends PlaceLocalObject
    * asking for work from this place.
    * <p>
    * Splits this place's {@link #bagsToDo} and {@link #deal(Place, Bag)}s with
-   * random thieves before {@link GenericGLBProcessor#lifelinedeal(Bag)}ing with
+   * random thieves before {@link LoopGLBProcessor#lifelinedeal(Bag)}ing with
    * the lifeline thieves.
    *
    * @param <B>the
    *          type of offered work given to thieves
    */
   private <B extends Bag<B> & Serializable> void distribute() {
-    if (places == 1 || bagsToDo.isEmpty()) {
+    if (places == 1) {
       return;
     }
+
+    final Place h = home;
     Place p;
-    while ((p = randomThieves.poll()) != null) {
+    while ((p = thieves.poll()) != null) {
       final String key = bagsToDo.keySet().iterator().next();
       final Bag<?> bag = bagsToDo.get(key);
       @SuppressWarnings("unchecked")
       final B toGive = (B) bag.split();
-      final Place h = home;
       uncountedAsyncAt(p, () -> {
         deal(h, toGive);
       });
     }
-    while (!bagsToDo.isEmpty() && (p = lifelineThieves.poll()) != null) {
-      // TODO Check if there is any work available ?
-      final Place h = home;
-      final Place d = p;
-      try { // TODO unsafe ?
-        workSplit.acquire();
-      } catch (final InterruptedException e) {
+    if (!bagsToDo.isEmpty()) {
+
+      while ((p = lifelineThieves.poll()) != null) {
+        asyncAt(p, () -> {
+          lifelineReply(h);
+        });
+        workSplit.acquireUninterruptibly();
       }
-      finish(() -> asyncAt(d, () -> {
-        lifelineReply(h);
-      }));
-      asyncAt(p, () -> run());
     }
+
   }
 
   /*
@@ -254,84 +241,40 @@ final class GenericGLBProcessor extends PlaceLocalObject
     folds.clear();
   }
 
-  /**
-   * Wakes up a place waiting for work on its lifeline, giving it some work
-   * {@code a} on the fly in response to a {@link #lifelinesteal()}
-   * <p>
-   * Only makes sense if this place is in inactive {@link #state}.
-   *
-   * @param <B>the
-   *          type of the given {@link Bag}
-   *
-   * @param q
-   *          the work to be given to the place
-   */
-  @SuppressWarnings("unchecked")
-  private <B extends Bag<B> & Serializable> void lifelineDeal(B q) {
-    if (q != null) {
-      final B d = (B) bagsDone.remove(q.getClass().getName()); // Possibly null
-      if (d != null) {
-        q.merge(d);
-      }
-      q.setWorkCollector(this);
-      bagsToDo.put(q.getClass().getName(), q);
-    }
-    System.err.println(home + " work received");
-  }
-
-  /**
-   * Method to call to reply to a lifeline thief. If the caller is the first to
-   * reply, calls the {@link #lifelineSend} method to transmit the work to
-   * share. Also removes the lifeline established on other places.
-   * <p>
-   * If an other place manages to call this method before its lifeline is
-   * removed, will return immediately thanks to a non blocking semaphore.
-   *
-   * @param answer
-   *          the place willing to give work to this place
-   */
   private void lifelineReply(Place answer) {
-    if (lifelineSem.tryAcquire()) {
-      final Place h = home;
-      System.err.println(answer + " will give to " + home);
+    final Place h = home;
+    if (lifelineAnswer.tryAcquire()) {
       asyncAt(answer, () -> {
         lifelineSend(h);
       });
-      for (final int i : lifelineStrategy.reverseLifeline(home.id, places)) {
-        if (i != answer.id) {
-          uncountedAsyncAt(place(i), () -> {
+
+      // Removing other lifelines
+      for (final int i : lifelines) {
+        if (i != home.id) {
+          asyncAt(place(i), () -> {
             lifelineThieves.remove(h);
           });
         }
       }
     } else {
-      // Some other place already gave some work, the answer place should keep
-      // going
-      System.err.println(answer + " is turned down by " + home);
-      asyncAt(answer, () -> {
+      // A lifeline made an answer but was not first, we unlock its progress.
+      uncountedAsyncAt(answer, () -> {
         workSplit.release();
       });
     }
+
   }
 
-  /**
-   * Splits this place bag, gives the work to the place given as parameter and
-   * launches its computation again.
-   *
-   * @param destination
-   *          the destination of the work to be given
-   */
   private <B extends Bag<B> & Serializable> void lifelineSend(
       Place destination) {
     final String key = bagsToDo.keySet().iterator().next();
     final Bag<?> bag = bagsToDo.get(key);
     @SuppressWarnings("unchecked")
     final B toGive = (B) bag.split();
-    workSplit.release();
-    System.err.println(home + " sending to " + destination);
     asyncAt(destination, () -> {
-      lifelineDeal(toGive);
+      lifelinedeal(toGive);
     });
+    workSplit.release();
   }
 
   /**
@@ -350,21 +293,50 @@ final class GenericGLBProcessor extends PlaceLocalObject
    *
    * @see #lifeline
    */
-  private void lifelineSteal() {
+  private void lifelinesteal() {
     if (places == 1) {
       // No other place exists, "this" is the only place.
       // Impossible to perform a steal.
       return;
     }
-    System.err.println(home + " set lifelines");
-
-    // Sets lifeline
+    // Sets lifeline on the place bearing id `home.id - 1` or `places - 1` if
+    // this place's is 0.
+    // The resulting lifeline graph is then a directed loop :
+    // 0 <- 1 <- 2 <- ... <- (places-1) <- (places) <- 0
+    // The work will be given (if ever) when the target place performs its
+    // distribute routine.
     final Place h = home;
     for (final int i : lifelines) {
       asyncAt(place(i), () -> {
         lifelineThieves.add(h);
       });
     }
+  }
+
+  /**
+   * Wakes up a place waiting for work on its lifeline, giving it some work
+   * {@code a} on the fly in response to a {@link #lifelinesteal()}
+   * <p>
+   * Only makes sense if this place is in inactive {@link #state}.
+   *
+   * @param <B>the
+   *          type of the given {@link Bag}
+   *
+   * @param q
+   *          the work to be given to the place
+   */
+  @SuppressWarnings("unchecked")
+  private synchronized <B extends Bag<B> & Serializable> void lifelinedeal(
+      B q) {
+    if (q != null) {
+      final B d = (B) bagsDone.remove(q.getClass().getName()); // Possibly null
+      if (d != null) {
+        q.merge(d);
+      }
+      q.setWorkCollector(this);
+      bagsToDo.put(q.getClass().getName(), q);
+    }
+    run();
   }
 
   /**
@@ -387,8 +359,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
       // The work will be shared when this place stops processing its tasks in
       // the main 'run' loop by the first 'distribute' call.
       if (state == -1) {
-        randomThieves.add(p);
-        System.err.println(p + " waiting for " + home);
+        thieves.add(p);
         return;
       }
     }
@@ -418,7 +389,6 @@ final class GenericGLBProcessor extends PlaceLocalObject
       state = -1;
     }
     while (!bagsToDo.isEmpty()) {
-      System.err.println(home + " processing");
       while (!bagsToDo.isEmpty()) {
         final String key = bagsToDo.keySet().iterator().next();
         final Bag<?> bag = bagsToDo.get(key);
@@ -447,7 +417,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
     // Sending null work to all the thieves
     Place p;
     final Place h = home;
-    while ((p = randomThieves.poll()) != null) {
+    while ((p = thieves.poll()) != null) {
       uncountedAsyncAt(p, () -> {
         deal(h, null);
       });
@@ -459,8 +429,8 @@ final class GenericGLBProcessor extends PlaceLocalObject
     }
 
     // Establishing lifeline
-    lifelineSem.release();
-    lifelineSteal();
+    lifelineAnswer.release();
+    lifelinesteal();
     System.err.println(home + " stopping");
   }
 
@@ -510,17 +480,6 @@ final class GenericGLBProcessor extends PlaceLocalObject
   /*
    * (non-Javadoc)
    *
-   * @see apgas.glb.GLBProcessor#addWork(apgas.glb.Bag)
-   */
-  @Override
-  public <B extends Bag<B> & Serializable> void addBag(B bag) {
-    bag.setWorkCollector(this);
-    bagsToDo.put(bag.getClass().getName(), bag);
-  }
-
-  /*
-   * (non-Javadoc)
-   *
    * @see apgas.glb.WorkCollector#giveBag(apgas.glb.Bag)
    */
   @SuppressWarnings("unchecked")
@@ -547,7 +506,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
   }
 
   /**
-   * Clears the {@link GenericGLBProcessor} of all its tasks and results and
+   * Clears the {@link LoopGLBProcessor} of all its tasks and results and
    * prepares it for a new computation.
    */
   @Override
@@ -583,22 +542,32 @@ final class GenericGLBProcessor extends PlaceLocalObject
    *          thief scheme
    */
   GenericGLBProcessor(int workUnit, int randomStealAttempts,
-      LifelineStrategy strategy) {
+      LifelineStrategy s) {
     WORK_UNIT = workUnit;
     RANDOM_STEAL_ATTEMPTS = randomStealAttempts;
     bagsToDo = new HashMap<>();
     bagsDone = new HashMap<>();
     folds = new HashMap<>();
-    lifelines = strategy.lifeline(home.id, places);
-    lifelineStrategy = strategy;
-
-    for (final int i : lifelineStrategy.reverseLifeline(home.id, places)) {
+    incomingLifelines = s.reverseLifeline(home.id, places);
+    lifelines = s.lifeline(home.id, places);
+    for (final int i : incomingLifelines) {
       if (i != 0) {
         lifelineThieves.add(place(i));
       }
     }
     if (home.id != 0) {
-      lifelineSem.release();
+      lifelineAnswer.release();
     }
+  }
+
+  /*
+   * (non-Javadoc)
+   *
+   * @see apgas.glb.GLBProcessor#addWork(apgas.glb.Bag)
+   */
+  @Override
+  public <B extends Bag<B> & Serializable> void addBag(B bag) {
+    bag.setWorkCollector(this);
+    bagsToDo.put(bag.getClass().getName(), bag);
   }
 }

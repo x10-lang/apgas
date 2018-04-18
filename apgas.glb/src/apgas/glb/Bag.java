@@ -3,9 +3,24 @@
  */
 package apgas.glb;
 
+import java.io.Serializable;
+
 /**
- * Bag presents the required methods for some bag to be processed successfully
+ * Bag presents the required methods for some work to be processed successfully
  * by a {@link WorkCollector}.
+ * <p>
+ * The interface's type parameter of implementing classes should be the classes
+ * themselves. Moreover, in order for {@link Bag}s to be accepted by the
+ * {@link GLBProcessor}, they will also need to implement the
+ * {@link Serializable} interface. Example :
+ *
+ * <pre>
+ * public class Work implements Fold&lt;Work&gt;, Serializable {
+ *
+ *   private static final long serialVersionUID = 3582168956043482749L;
+ *   // implementation ...
+ * }
+ * </pre>
  *
  * @author Patrick Finnerty
  *
@@ -14,10 +29,11 @@ public interface Bag<B extends Bag<B>> {
 
   /**
    * Processes a certain amount of work as specified by the parameter and
-   * returns.
+   * returns. If there is less work than the given parameter to be done,
+   * processes the remaining work until the {@link Bag} is empty.
    *
    * @param workAmount
-   *          number of tasks / amount of work to process
+   *          amount of work to process
    */
   public void process(int workAmount);
 
@@ -56,8 +72,8 @@ public interface Bag<B extends Bag<B>> {
   /**
    * Sets a WorkCollector which will handle work spawned by this Bag. If at some
    * point the Bag needs to create some new Bag that should be computed, a
-   * {@link WorkCollector} should be kept as a member of the class and be
-   * updated by this method.
+   * {@link WorkCollector} should be kept as a member of the class and be set by
+   * calling this method.
    * <p>
    * When the Bag is split and transferred from one place to another, the member
    * is updated automatically by the {@link WorkCollector}. If the {@link Bag}
@@ -65,7 +81,7 @@ public interface Bag<B extends Bag<B>> {
    * empty.
    *
    * @param p
-   *          the new {@link WorkCollector} to be kept.
+   *          the new {@link WorkCollector} instance to be kept.
    */
   public void setWorkCollector(WorkCollector p);
 }

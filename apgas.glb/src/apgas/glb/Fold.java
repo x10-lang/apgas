@@ -3,12 +3,15 @@
  */
 package apgas.glb;
 
+import java.io.Serializable;
+
 /**
- * Fold provides the necessary methods for results to be gathered in a single
- * class by the {@link WorkCollector}.
+ * {@link Fold} provides the necessary methods for results to be gathered in a
+ * single class by the {@link WorkCollector}.
  * <p>
- * Implementation classes should implement the interface on themselves. Below is
- * a simple example of a {@link Fold} implementation :
+ * Implementation classes should implement the interface on themselves as well
+ * as the {@link Serializable} interface. Below is a simple example of a
+ * {@link Fold} implementation :
  *
  * <pre>
  * public class Sum implements Fold&lt;Sum&gt;, Serializable {

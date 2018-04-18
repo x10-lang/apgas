@@ -329,7 +329,7 @@ public class UTSBag implements Serializable, Bag<UTSBag> {
   }
 
   /**
-   * Launches the computation using the {@link apgas.glb.LoopGLBProcessor}
+   * Launches the computation
    *
    * @param args
    *          one argument can be specified : the depth of the tree to explore.

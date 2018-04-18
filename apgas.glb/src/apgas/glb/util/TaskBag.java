@@ -20,6 +20,8 @@ public interface TaskBag {
   /**
    * Adds an extra task in the {@link TaskBag}
    *
+   * @param <T>
+   *          type of parameter t
    * @param t
    *          the task to add
    */

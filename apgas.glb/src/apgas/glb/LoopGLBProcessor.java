@@ -21,10 +21,10 @@ import apgas.util.PlaceLocalObject;
  * using the lifeline based global load balancing framework proposed by APGAS.
  * <p>
  * Initial {@link Bag}s to be processed can be added to this instance by calling
- * {@link #addTaskBag(Bag)}. Computation is launched using the
- * {@link #compute()} method. If the programmer wishes to use same computing
- * instance for several successive calculation, method {@link #reset()} should
- * be called before adding the new {@link Bag}s to be processed.
+ * {@link #addBag(Bag)}. Computation is launched using the {@link #compute()}
+ * method. If the programmer wishes to use same computing instance for several
+ * successive calculation, method {@link #reset()} should be called before
+ * adding the new {@link Bag}s to be processed.
  *
  * @author Patrick Finnerty
  *
@@ -47,24 +47,6 @@ final class LoopGLBProcessor extends PlaceLocalObject
   /** Brings the APGAS place id to the class {@link LoopGLBProcessor} */
   private final Place home = here();
 
-  /** Number of places available for the computation */
-  private final int places = places().size();
-
-  /**
-   * Random generator used when thieving a random place
-   * <p>
-   * By initializing the seed with the place id (different from all the other
-   * places), we avoid having the same sequence of places to thieve from for all
-   * the places.
-   */
-  private final Random random = new Random(home.id);
-
-  /**
-   * List of thieves that asked for work when the current place was performing
-   * computation
-   */
-  private final ConcurrentLinkedQueue<Place> thieves = new ConcurrentLinkedQueue<>();
-
   /**
    * Signals the presence of a thief on the lifeline
    * <p>
@@ -79,11 +61,20 @@ final class LoopGLBProcessor extends PlaceLocalObject
    */
   private final AtomicBoolean lifeline = new AtomicBoolean(home.id != 3);
 
+  /** Number of places available for the computation */
+  private final int places = places().size();
+
+  /**
+   * Random generator used when thieving a random place
+   * <p>
+   * By initializing the seed with the place id (different from all the other
+   * places), we avoid having the same sequence of places to thieve from for all
+   * the places.
+   */
+  private final Random random = new Random(home.id);
+
   /** Number of random steal attempts performed by this place */
   private final int RANDOM_STEAL_ATTEMPTS;
-
-  /** Number of task processed by this place before dealing with thieves */
-  private final int WORK_UNIT;
 
   /**
    * Indicates the state of the place at any given time.
@@ -97,6 +88,15 @@ final class LoopGLBProcessor extends PlaceLocalObject
    * be protected at each read/write.
    */
   private int state = -2;
+
+  /**
+   * List of thieves that asked for work when the current place was performing
+   * computation
+   */
+  private final ConcurrentLinkedQueue<Place> thieves = new ConcurrentLinkedQueue<>();
+
+  /** Number of task processed by this place before dealing with thieves */
+  private final int WORK_UNIT;
 
   /**
    * Puts this local place to a ready to compute state.
@@ -187,32 +187,9 @@ final class LoopGLBProcessor extends PlaceLocalObject
         p = place((home.id + 1) % places);
         lifeline.set(false);
         asyncAt(p, () -> {
-          lifelinedeal(toGive);
+          lifelineDeal(toGive);
         });
       }
-    }
-  }
-
-  /*
-   * (non-Javadoc)
-   *
-   * @see apgas.glb.WorkCollector#fold(apgas.glb.Fold)
-   */
-  @SuppressWarnings("unchecked")
-  @Override
-  public synchronized <F extends Fold<F> & Serializable> void giveFold(F fold) {
-    /*
-     * This method needs to be synchronized since distant places are suceptible
-     * to call it when sending their results before quiescing.
-     */
-
-    final String key = fold.getClass().getName();
-    final F existing = (F) folds.get(key);
-
-    if (existing != null) {
-      existing.fold(fold);
-    } else {
-      folds.put(key, fold);
     }
   }
 
@@ -247,7 +224,7 @@ final class LoopGLBProcessor extends PlaceLocalObject
    *
    * @see #lifeline
    */
-  private void lifelinesteal() {
+  private void lifelineSteal() {
     if (places == 1) {
       // No other place exists, "this" is the only place.
       // Impossible to perform a steal.
@@ -266,7 +243,7 @@ final class LoopGLBProcessor extends PlaceLocalObject
 
   /**
    * Wakes up a place waiting for work on its lifeline, giving it some work
-   * {@code a} on the fly in response to a {@link #lifelinesteal()}
+   * {@code a} on the fly in response to a {@link #lifelineSteal()}
    * <p>
    * Only makes sense if this place is in inactive {@link #state}.
    *
@@ -277,8 +254,7 @@ final class LoopGLBProcessor extends PlaceLocalObject
    *          the work to be given to the place
    */
   @SuppressWarnings("unchecked")
-  private synchronized <B extends Bag<B> & Serializable> void lifelinedeal(
-      B q) {
+  private <B extends Bag<B> & Serializable> void lifelineDeal(B q) {
     if (q != null) {
       final B d = (B) bagsDone.remove(q.getClass().getName()); // Possibly null
       if (d != null) {
@@ -380,7 +356,7 @@ final class LoopGLBProcessor extends PlaceLocalObject
     }
 
     // Establishing lifeline
-    lifelinesteal();
+    lifelineSteal();
     System.err.println(home + " stopping");
   }
 
@@ -430,6 +406,25 @@ final class LoopGLBProcessor extends PlaceLocalObject
   /*
    * (non-Javadoc)
    *
+   * @see apgas.glb.GLBProcessor#addWork(apgas.glb.Bag)
+   */
+  @Override
+  public <B extends Bag<B> & Serializable> void addBag(B bag) {
+    bag.setWorkCollector(this);
+    bagsToDo.put(bag.getClass().getName(), bag);
+  }
+
+  /** Launches the computation of the given work */
+  @Override
+  public void compute() {
+    finish(() -> {
+      run();
+    });
+  }
+
+  /*
+   * (non-Javadoc)
+   *
    * @see apgas.glb.WorkCollector#giveBag(apgas.glb.Bag)
    */
   @SuppressWarnings("unchecked")
@@ -447,12 +442,27 @@ final class LoopGLBProcessor extends PlaceLocalObject
     bagsToDo.put(b.getClass().getName(), b);
   }
 
-  /** Launches the computation of the given work */
+  /*
+   * (non-Javadoc)
+   *
+   * @see apgas.glb.WorkCollector#fold(apgas.glb.Fold)
+   */
+  @SuppressWarnings("unchecked")
   @Override
-  public void compute() {
-    finish(() -> {
-      run();
-    });
+  public synchronized <F extends Fold<F> & Serializable> void giveFold(F fold) {
+    /*
+     * This method needs to be synchronized since distant places are suceptible
+     * to call it when sending their results before quiescing.
+     */
+
+    final String key = fold.getClass().getName();
+    final F existing = (F) folds.get(key);
+
+    if (existing != null) {
+      existing.fold(fold);
+    } else {
+      folds.put(key, fold);
+    }
   }
 
   /**
@@ -497,16 +507,5 @@ final class LoopGLBProcessor extends PlaceLocalObject
     bagsToDo = new HashMap<>();
     bagsDone = new HashMap<>();
     folds = new HashMap<>();
-  }
-
-  /*
-   * (non-Javadoc)
-   *
-   * @see apgas.glb.GLBProcessor#addWork(apgas.glb.Bag)
-   */
-  @Override
-  public <B extends Bag<B> & Serializable> void addBag(B bag) {
-    bag.setWorkCollector(this);
-    bagsToDo.put(bag.getClass().getName(), bag);
   }
 }

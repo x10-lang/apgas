@@ -6,6 +6,6 @@
  * Global Load Balancing API relying on the APGAS (Asynchroneous Partitioned
  * Global Address Space) framework.
  *
- * @author Patrick
+ * @author Patrick Finnerty
  */
 package apgas.glb;

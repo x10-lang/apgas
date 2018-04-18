@@ -11,6 +11,10 @@ import apgas.Configuration;
 import apgas.util.PlaceLocalObject;
 
 /**
+ * Factory class for {@link GLBProcessor}s.
+ * <p>
+ * Prepares GLBProcessor and returns them.
+ *
  * @author Patrick Finnerty
  *
  */
@@ -36,7 +40,7 @@ public class GLBProcessorFactory {
    * This yields a LoopGLBProcessor using default configuration.
    *
    * @return a new computing instance
-   * @see #GLBProcessorFactory(int, int)
+   * @see #LoopGLBProcessor(int, int)
    */
   public static GLBProcessor LoopGLBProcessor() {
     if (System.getProperty(Configuration.APGAS_PLACES) == null) {
@@ -52,10 +56,9 @@ public class GLBProcessorFactory {
   /**
    * Creates a LoopGLBProcessor (factory method)
    * <p>
-   * The returned LoopGLBProcessor will follow the provided configuration that
-   * is :
+   * The returned LoopGLBProcessor will follow the provided configuration i.e. :
    * <ul>
-   * <li>The number of work to be processed by {@link Bag#process(int)} before
+   * <li>The amount of work to be processed by {@link Bag#process(int)} before
    * dealing with potential thieves
    * <li>The number of random steal attempts performed before turning to the the
    * lifeline-steal scheme.
@@ -81,8 +84,10 @@ public class GLBProcessorFactory {
 
   /**
    * Creates a generic GLBProcessor following the given workUnit stealAttempts
-   * and strategy provided
-   *
+   * and lifeline strategy provided
+   * 
+   * @param <S>
+   *          Type of the strategy parameter
    * @param workUnit
    *          amount of work to process before distributing work
    * @param stealAttempts

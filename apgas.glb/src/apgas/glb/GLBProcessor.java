@@ -7,6 +7,13 @@ import java.io.Serializable;
 import java.util.Collection;
 
 /**
+ * Initial {@link Bag}s to be processed can be added to this instance by calling
+ * {@link #addBag(Bag)}. Computation is launched using the {@link #compute()}
+ * method. If the programmer wishes to use same computing instance for several
+ * successive computations, method {@link #reset()} should be called before
+ * adding the new {@link Bag}s to be processed to avoid existing results from
+ * previous computations to interfere with the new ones.
+ *
  * @author Patrick Finnerty
  *
  */
@@ -14,6 +21,10 @@ public interface GLBProcessor {
 
   /**
    * Allows to give some work to be computed by the GLBProcessor.
+   * <p>
+   * Several {@link Bag}s can be given to the {@link GLBProcessor} before
+   * launching the computation, however if two bags of the same class are given,
+   * the second one will overwrite the first.
    *
    * @param <B>
    *          Class implementing interface {@link Bag} on itself and
@@ -36,7 +47,7 @@ public interface GLBProcessor {
 
   /**
    * Discards all {@link Bag}s and {@link Fold}s remaining in the GLBProcessor
-   * to make it clean for some new computation.
+   * to make it clean and ready for some new computation.
    */
   public void reset();
 

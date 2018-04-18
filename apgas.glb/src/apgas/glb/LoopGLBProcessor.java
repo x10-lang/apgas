@@ -164,7 +164,7 @@ final class LoopGLBProcessor extends PlaceLocalObject
    *          type of offered work given to thieves
    */
   private <B extends Bag<B> & Serializable> void distribute() {
-    if (places == 1) {
+    if (places == 1 || bagsToDo.isEmpty()) {
       return;
     }
     Place p;
@@ -178,7 +178,7 @@ final class LoopGLBProcessor extends PlaceLocalObject
         deal(h, toGive);
       });
     }
-    if (!bagsToDo.isEmpty() && lifeline.get()) {
+    if (lifeline.get()) {
       final String key = bagsToDo.keySet().iterator().next();
       final Bag<?> bag = bagsToDo.get(key);
       @SuppressWarnings("unchecked")

@@ -96,7 +96,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
    */
   private int state = -2;
 
-  private final Semaphore workSplit = new Semaphore(0, false);
+  private boolean workSplit = false;
 
   private final Semaphore lifelineAnswer = new Semaphore(0, false);
 
@@ -115,7 +115,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
     bagsToDo.clear();
     bagsDone.clear();
     folds.clear();
-    workSplit.drainPermits();
+    workSplit = false;
     lifelineAnswer.drainPermits();
     if (home.id != 0) {
       lifelineAnswer.release();
@@ -194,10 +194,18 @@ final class GenericGLBProcessor extends PlaceLocalObject
     }
 
     while ((p = lifelineThieves.poll()) != null) {
+      workSplit = true;
       asyncAt(p, () -> {
         lifelineReply(h);
       });
-      workSplit.acquireUninterruptibly();
+      synchronized (this) {
+        while (workSplit) {
+          try {
+            wait();
+          } catch (final InterruptedException e) {
+          }
+        }
+      }
     }
 
   }
@@ -262,8 +270,11 @@ final class GenericGLBProcessor extends PlaceLocalObject
     } else {
       // A lifeline made an answer but was not first, we unlock its progress.
       System.err.println(answer + " is turned down by " + home);
-      uncountedAsyncAt(answer, () -> {
-        workSplit.release();
+      asyncAt(answer, () -> {
+        workSplit = false;
+        synchronized (this) {
+          notifyAll();
+        }
       });
     }
 
@@ -279,8 +290,10 @@ final class GenericGLBProcessor extends PlaceLocalObject
     asyncAt(destination, () -> {
       lifelinedeal(toGive);
     });
-    workSplit.release();
-
+    workSplit = false;
+    synchronized (this) {
+      notifyAll();
+    }
   }
 
   /**

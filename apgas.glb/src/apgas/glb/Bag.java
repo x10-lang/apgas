@@ -12,10 +12,12 @@ import java.io.Serializable;
  * The interface's type parameter of implementing classes should be the classes
  * themselves. Moreover, in order for {@link Bag}s to be accepted by the
  * {@link GLBProcessor}, they will also need to implement the
- * {@link Serializable} interface. Example :
+ * {@link Serializable} interface.
+ * <p>
+ * For instance:
  *
  * <pre>
- * public class Work implements Fold&lt;Work&gt;, Serializable {
+ * public class Work implements Bag&lt;Work&gt;, Serializable {
  *
  *   private static final long serialVersionUID = 3582168956043482749L;
  *   // implementation ...

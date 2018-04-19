@@ -6,18 +6,25 @@ package apgas.glb.example;
 import static org.junit.Assert.*;
 
 import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.Collection;
 
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import apgas.glb.GLBProcessor;
 import apgas.glb.GLBProcessorFactory;
+import apgas.glb.HypercubeStrategy;
 
 /**
+ * Tests that the computation of the UTS completes in reasonable time
+ *
  * @author Patrick Finnerty
  *
  */
+@RunWith(Parameterized.class)
 public class UTSTest {
 
   /** Depth of the tree to be explored */
@@ -37,10 +44,14 @@ public class UTSTest {
   /** Message dialect used by UTS computation to generate the tree */
   static MessageDigest MD;
 
-  /** Setup method */
-  @BeforeClass
-  public static void setup() {
-    processor = GLBProcessorFactory.LoopGLBProcessor(500, 1);
+  /**
+   * Constructor
+   *
+   * @param p
+   *          GLBProcessor to be tested
+   */
+  public UTSTest(GLBProcessor p) {
+    processor = p;
     MD = UTSBag.encoder();
 
     final UTSBag taskBag = new UTSBag(64);
@@ -48,7 +59,6 @@ public class UTSTest {
     taskBag.seed(MD, SEED, TREE_DEPTH - 2);
 
     processor.compute();
-
   }
 
   /** Cleaning performed between tests */
@@ -74,4 +84,20 @@ public class UTSTest {
     assertEquals(EXPECTED_NODES, count);
   }
 
+  /**
+   * Creates the {@link GLBProcessor} implementation to be tested.
+   * 
+   * @return collection of arguments to be given to the constructor of this test
+   *         class.
+   */
+  @Parameterized.Parameters
+  public static Collection<Object[]> toTest() {
+    final Collection<Object[]> toReturn = new ArrayList<>();
+    final Object[] first = { GLBProcessorFactory.LoopGLBProcessor(500, 1) };
+    toReturn.add(first);
+    final Object[] second = {
+        GLBProcessorFactory.GLBProcessor(500, 1, new HypercubeStrategy()) };
+    toReturn.add(second);
+    return toReturn;
+  }
 }

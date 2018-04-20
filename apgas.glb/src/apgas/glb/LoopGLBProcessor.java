@@ -255,14 +255,12 @@ final class LoopGLBProcessor extends PlaceLocalObject
    */
   @SuppressWarnings("unchecked")
   private <B extends Bag<B> & Serializable> void lifelineDeal(B q) {
-    if (q != null) {
-      final B d = (B) bagsDone.remove(q.getClass().getName()); // Possibly null
-      if (d != null) {
-        q.merge(d);
-      }
-      q.setWorkCollector(this);
-      bagsToDo.put(q.getClass().getName(), q);
+    final B d = (B) bagsDone.remove(q.getClass().getName()); // Possibly null
+    if (d != null) {
+      q.merge(d);
     }
+    q.setWorkCollector(this);
+    bagsToDo.put(q.getClass().getName(), q);
     run();
   }
 

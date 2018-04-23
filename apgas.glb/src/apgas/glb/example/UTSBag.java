@@ -361,15 +361,21 @@ public class UTSBag implements Serializable, Bag<UTSBag> {
     secondBag.seed(md, 19, depth);
 
     System.out.println("Starting...");
-    long time = System.nanoTime();
+    final long start = System.nanoTime();
     processor.compute();
 
-    time = System.nanoTime() - time;
+    final long computationEnd = System.nanoTime();
     System.out.println("Finished.");
 
     final long count = ((Sum) processor.result().toArray()[0]).sum;
+    final long gatherEnd = System.nanoTime();
+
+    final long computationTime = computationEnd - start;
+    final long gatherTime = gatherEnd - computationEnd;
+
     System.out.println("Depth: " + depth + ", Performance: " + count + "/"
-        + sub("" + time / 1e9, 0, 6) + " = "
-        + sub("" + (count / (time / 1e3)), 0, 6) + "M nodes/s");
+        + sub("" + computationTime / 1e9, 0, 6) + " = "
+        + sub("" + (count / (computationTime / 1e3)), 0, 6) + "M nodes/s");
+    System.out.println("Gather time: " + sub("" + gatherTime / 1e9, 0, 6));
   }
 }

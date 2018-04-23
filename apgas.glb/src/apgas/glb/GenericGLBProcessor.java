@@ -40,6 +40,12 @@ final class GenericGLBProcessor extends PlaceLocalObject
   @SuppressWarnings("rawtypes")
   private final Map<String, Bag> bagsDone;
 
+  /**
+   * Indicates if the {@link #folds} member is the folded result of all the
+   * places or not. Only useful for place 0.
+   */
+  private boolean foldCompleted = false;
+
   /** Collection of folds handled by this computation place */
   @SuppressWarnings("rawtypes")
   private final Map<String, Fold> folds;
@@ -239,7 +245,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
   @SuppressWarnings("unchecked")
   private <F extends Fold<F> & Serializable> void gather() {
     for (final Fold<?> f : folds.values()) {
-      asyncAt(place(0), () -> giveFold((F) f));
+      asyncAt(place(0), () -> synchronizedGiveFold((F) f));
     }
     folds.clear();
   }
@@ -459,11 +465,6 @@ final class GenericGLBProcessor extends PlaceLocalObject
       });
     }
 
-    // Folding this instance's folds into that of place 0
-    if (home.id != 0) {
-      gather();
-    }
-
     // Establishing lifeline
     lifelineAnswer.release();
     lifelineSteal();
@@ -513,6 +514,20 @@ final class GenericGLBProcessor extends PlaceLocalObject
     }
   }
 
+  /**
+   * Merges the given Fold into this instance folds, ensuring mutual exclusion
+   *
+   * @param <F>
+   *          type parameter
+   * @param fold
+   *          the fold to be merged into this place
+   */
+  private <F extends Fold<F> & Serializable> void synchronizedGiveFold(F fold) {
+    synchronized (this) {
+      giveFold(fold);
+    }
+  }
+
   /*
    * (non-Javadoc)
    *
@@ -531,6 +546,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
    */
   @Override
   public void compute() {
+    foldCompleted = false;
     finish(() -> {
       run();
     });
@@ -563,7 +579,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
    */
   @SuppressWarnings("unchecked")
   @Override
-  public synchronized <F extends Fold<F> & Serializable> void giveFold(F fold) {
+  public <F extends Fold<F> & Serializable> void giveFold(F fold) {
     /*
      * This method needs to be synchronized since distant places are suceptible
      * to call it when sending their results before quiescing.
@@ -603,6 +619,18 @@ final class GenericGLBProcessor extends PlaceLocalObject
   @Override
   @SuppressWarnings("rawtypes")
   public Collection<Fold> result() {
+    if (!foldCompleted) {
+
+      finish(() -> {
+        for (final Place p : places()) {
+          // Folding this instance's folds into that of place 0
+          if (p.id != 0) {
+            asyncAt(p, () -> gather());
+          }
+        }
+      });
+      foldCompleted = true;
+    }
     return folds.values();
   }
 

@@ -33,6 +33,16 @@ public class Sum implements Fold<Sum>, Serializable {
     sum += f.sum;
   }
 
+  /*
+   * (non-Javadoc)
+   * 
+   * @see apgas.glb.Fold#id()
+   */
+  @Override
+  public String id() {
+    return "";
+  }
+
   /**
    * Construtor
    *
@@ -42,4 +52,5 @@ public class Sum implements Fold<Sum>, Serializable {
   public Sum(int s) {
     sum = s;
   }
+
 }

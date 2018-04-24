@@ -25,9 +25,11 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class MultipleFoldsTest {
 
-  private static final String KEY_A = "hundred";
+  private static final String KEY_HUNDRED_SUM = "hundred";
 
-  private static final String KEY_B = "one";
+  private static final String KEY_ONE_SUM = "one";
+
+  private static final String KEY_MIN = KEY_HUNDRED_SUM;
 
   private static final int MIN_VALUE = 100;
 
@@ -35,7 +37,7 @@ public class MultipleFoldsTest {
   private final GLBProcessor processor;
 
   /**
-   * Puts the GLBProcessor instance back in a ready to cumpute state.
+   * Puts the GLBProcessor instance back in a ready to compute state.
    */
   @Before
   public void before() {
@@ -59,9 +61,9 @@ public class MultipleFoldsTest {
     while (it.hasNext()) {
       nbFolds++;
       final Fold f = it.next();
-      if (f.id() == KEY_A) {
+      if (f.id() == KEY_HUNDRED_SUM) {
         sumHundred = (Sum) f;
-      } else if (f.id() == KEY_B) {
+      } else if (f.id() == KEY_ONE_SUM) {
         sumOne = (Sum) f;
       }
     }
@@ -77,7 +79,7 @@ public class MultipleFoldsTest {
   @SuppressWarnings("rawtypes")
   @Test(timeout = 10000)
   public void differentClassSameIdTest() {
-    processor.addBag(new FoldSpawn(100, 100, 0));
+    processor.addBag(new FoldSpawn(100, 0, 100));
     processor.compute();
 
     Min min = null;
@@ -87,19 +89,18 @@ public class MultipleFoldsTest {
     while (it.hasNext()) {
       nbFolds++;
       final Fold f = it.next();
-      if (f.id() == "hundred") {
-        fail("Unexpected key : <hundred>");
-      } else if (f.id() == "one") {
-
+      if (f.id() == KEY_HUNDRED_SUM) {
         if (f instanceof Sum) {
           sum = (Sum) f;
         } else if (f instanceof Min) {
           min = (Min) f;
         }
+      } else {
+        fail("Unexpected key : " + f.id());
       }
     }
     assertEquals(2, nbFolds);
-    assertEquals(100, sum.sum);
+    assertEquals(10000, sum.sum);
     assertEquals(MIN_VALUE, min.min);
   }
 
@@ -146,27 +147,27 @@ public class MultipleFoldsTest {
         nbSumHundred--;
         nbSumOne--;
         nbMin--;
-        collector.giveFold(new Sum(100, KEY_B));
-        collector.giveFold(new Sum(1, KEY_A));
-        collector.giveFold(new Min(MIN_VALUE, KEY_B));
+        collector.giveFold(new Sum(100, KEY_HUNDRED_SUM));
+        collector.giveFold(new Sum(1, KEY_ONE_SUM));
+        collector.giveFold(new Min(MIN_VALUE, KEY_MIN));
         workAmount--;
       }
 
       while (workAmount > 0 && nbSumHundred > 0) {
         nbSumHundred--;
-        collector.giveFold(new Sum(100, KEY_B));
+        collector.giveFold(new Sum(100, KEY_HUNDRED_SUM));
         workAmount--;
       }
 
       while (workAmount > 0 && nbSumOne > 0) {
         nbSumOne--;
-        collector.giveFold(new Sum(1, KEY_A));
+        collector.giveFold(new Sum(1, KEY_ONE_SUM));
         workAmount--;
       }
 
       while (workAmount > 0 && nbMin > 0) {
         nbMin--;
-        collector.giveFold(new Min(MIN_VALUE, KEY_B));
+        collector.giveFold(new Min(MIN_VALUE, KEY_MIN));
         workAmount--;
       }
     }
@@ -221,6 +222,16 @@ public class MultipleFoldsTest {
       collector = p;
     }
 
+    /**
+     * Constructor for {@link FoldSpawn}
+     *
+     * @param sumHundred
+     *          number of {@link Sum} of value {@code 100} to be spawned
+     * @param sumOne
+     *          number of {@link Sum} of value {@code 1} to be spawned
+     * @param min
+     *          number of {@link Min} to be spawned
+     */
     public FoldSpawn(int sumHundred, int sumOne, int min) {
       nbSumHundred = sumHundred;
       nbSumOne = sumOne;

@@ -465,7 +465,7 @@ final class LoopGLBProcessor extends PlaceLocalObject
   @Override
   public <F extends Fold<F> & Serializable> void giveFold(F fold) {
 
-    final String key = fold.getClass().getName();
+    final String key = fold.getClass().getName() + fold.id();
     final F existing = (F) folds.get(key);
 
     if (existing != null) {

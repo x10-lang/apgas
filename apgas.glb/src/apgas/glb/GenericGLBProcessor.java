@@ -584,7 +584,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
      * to call it when sending their results before quiescing.
      */
 
-    final String key = fold.getClass().getName();
+    final String key = fold.getClass().getName() + fold.id();
     final F existing = (F) folds.get(key);
 
     if (existing != null) {

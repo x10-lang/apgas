@@ -145,7 +145,7 @@ public class GLBProcessorTest {
   }
 
   /**
-   * Yields the {@link GLBProcessor} implementation to be tested.
+   * Yields the {@link GLBProcessor} implementations to be tested.
    *
    * @return collection of GLBProcessor
    */
@@ -172,6 +172,11 @@ public class GLBProcessorTest {
     @Override
     public void fold(Sum s) {
       sum += s.sum;
+    }
+
+    @Override
+    public String id() {
+      return "";
     }
 
     /**
@@ -286,6 +291,11 @@ public class GLBProcessorTest {
       if (m.value < value) {
         value = m.value;
       }
+    }
+
+    @Override
+    public String id() {
+      return "";
     }
 
     /**

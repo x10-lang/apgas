@@ -327,7 +327,6 @@ final class GenericGLBProcessor extends PlaceLocalObject
   /**
    * Registers this {@link GenericGLBProcessor} as asking for work from its
    * (remote) lifeline places. If there is only one place, has no effect.
-   * <p>
    *
    * @see #lifelineThieves
    */

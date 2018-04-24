@@ -163,7 +163,7 @@ final class LoopGLBProcessor extends PlaceLocalObject
    * asking for work from this place.
    * <p>
    * Splits this place's {@link #bagsToDo} and {@link #deal(Place, Bag)}s with
-   * random thieves before {@link LoopGLBProcessor#lifelinedeal(Bag)}ing with
+   * random thieves before {@link LoopGLBProcessor#lifelineDeal(Bag)}ing with
    * the lifeline thieves.
    *
    * @param <B>the
@@ -311,7 +311,7 @@ final class LoopGLBProcessor extends PlaceLocalObject
    * put in a request between two attempted steals before establishing its
    * lifeline and stopping. This procedure can be called again if the lifeline
    * steal is successful : the place offering the work will call the
-   * {@link #run()} method on this place via {@link #lifelinedeal(Bag)}
+   * {@link #run()} method on this place via {@link #lifelineDeal(Bag)}
    */
   private void run() {
     System.err.println(home + " starting");

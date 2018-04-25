@@ -127,7 +127,7 @@ final class LoopGLBProcessor extends PlaceLocalObject
   /**
    * Yields back work that was split from the bags contained in
    * {@link #bagsToDo} or null if no work could be split
-   * 
+   *
    * @param <B>
    *          return type parameter
    * @return work split form this place's bags
@@ -266,6 +266,29 @@ final class LoopGLBProcessor extends PlaceLocalObject
   }
 
   /**
+   * Wakes up a place waiting for work on its lifeline, giving it some work
+   * {@code a} on the fly in response to a {@link #lifelineSteal()}
+   * <p>
+   * Only makes sense if this place is in inactive {@link #state}.
+   *
+   * @param <B>the
+   *          type of the given {@link Bag}
+   *
+   * @param q
+   *          the work to be given to the place
+   */
+  @SuppressWarnings("unchecked")
+  private <B extends Bag<B> & Serializable> void lifelineDeal(B q) {
+    final B d = (B) bagsDone.remove(q.getClass().getName()); // Possibly null
+    if (d != null) {
+      q.merge(d);
+    }
+    q.setWorkCollector(this);
+    bagsToDo.put(q.getClass().getName(), q);
+    run();
+  }
+
+  /**
    * Registers this {@code LoopGLBProcessor} as asking for work from its
    * (remote) lifeline {@code LoopGLBProcessor} place. If there is only one
    * place, has no effect.
@@ -296,29 +319,6 @@ final class LoopGLBProcessor extends PlaceLocalObject
     asyncAt(place((home.id + places - 1) % places), () -> {
       lifeline.set(true);
     });
-  }
-
-  /**
-   * Wakes up a place waiting for work on its lifeline, giving it some work
-   * {@code a} on the fly in response to a {@link #lifelineSteal()}
-   * <p>
-   * Only makes sense if this place is in inactive {@link #state}.
-   *
-   * @param <B>the
-   *          type of the given {@link Bag}
-   *
-   * @param q
-   *          the work to be given to the place
-   */
-  @SuppressWarnings("unchecked")
-  private <B extends Bag<B> & Serializable> void lifelineDeal(B q) {
-    final B d = (B) bagsDone.remove(q.getClass().getName()); // Possibly null
-    if (d != null) {
-      q.merge(d);
-    }
-    q.setWorkCollector(this);
-    bagsToDo.put(q.getClass().getName(), q);
-    run();
   }
 
   /**

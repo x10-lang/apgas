@@ -8,6 +8,7 @@ import static apgas.Constructs.*;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -31,6 +32,28 @@ import apgas.util.PlaceLocalObject;
  */
 final class GenericGLBProcessor extends PlaceLocalObject
     implements WorkCollector, GLBProcessor {
+
+  @SuppressWarnings("rawtypes")
+  private Bag bagForLifeline = null;
+
+  /**
+   * Iterator used to go through the bagsTodo when trying to split work for
+   * thieves.
+   *
+   * @see #bagSplit()
+   * @see #bagSplitReset()
+   */
+  private Iterator<String> bagSplitIterator = null;
+
+  /**
+   * Last bag from which work was split or null. Used when trying to split work
+   * for thieves
+   *
+   * @see #bagSplit()
+   * @see #bagSplitReset()
+   */
+  @SuppressWarnings("rawtypes")
+  private Bag bagInSplitting = null;
 
   /** Collection of tasks bags to be processed */
   @SuppressWarnings("rawtypes")
@@ -120,6 +143,41 @@ final class GenericGLBProcessor extends PlaceLocalObject
   private final int WORK_UNIT;
 
   /**
+   * Yields back work that was split from the bags contained in
+   * {@link #bagsToDo} or null if no work could be split
+   *
+   * @param <B>
+   *          return type parameter
+   * @return work split form this place's bags
+   */
+  @SuppressWarnings("unchecked")
+  private <B extends Bag<B> & Serializable> B bagSplit() {
+    B splitToReturn = null;
+    if (bagInSplitting == null && bagSplitIterator.hasNext()) {
+      bagInSplitting = bagsToDo.get(bagSplitIterator.next());
+    }
+    if (bagInSplitting != null) {
+      splitToReturn = (B) bagInSplitting.split();
+    }
+
+    while (splitToReturn == null && bagSplitIterator.hasNext()) {
+      bagInSplitting = bagsToDo.get(bagSplitIterator.next());
+      splitToReturn = (B) bagInSplitting.split();
+    }
+    return splitToReturn;
+  }
+
+  /**
+   * Prepares the worker for a new series of {@link #bagSplit()}. Needs to be
+   * called before any call to {@link #bagSplit()} when the {@link Bag}s
+   * contained by this place have evolved.
+   */
+  private void bagSplitReset() {
+    bagSplitIterator = bagsToDo.keySet().iterator();
+    bagInSplitting = null;
+  }
+
+  /**
    * Puts this local place into a ready to compute state.
    */
   private void clear() {
@@ -197,18 +255,17 @@ final class GenericGLBProcessor extends PlaceLocalObject
    * @param <B>
    *          type of offered work given to thieves
    */
+  @SuppressWarnings("unchecked")
   private <B extends Bag<B> & Serializable> void distribute() {
-    if (places == 1 || bagsToDo.isEmpty()) {
+    if (places == 1) {
       return;
     }
-
+    bagSplitReset();
     final Place h = home;
     Place p;
     while ((p = thieves.poll()) != null) {
-      final String key = bagsToDo.keySet().iterator().next();
-      final Bag<?> bag = bagsToDo.get(key);
-      @SuppressWarnings("unchecked")
-      final B toGive = (B) bag.split();
+
+      final B toGive = bagSplit();
       System.err.println(p + " stole from " + home);
       uncountedAsyncAt(p, () -> {
         deal(h, toGive);
@@ -216,21 +273,34 @@ final class GenericGLBProcessor extends PlaceLocalObject
     }
 
     while ((p = lifelineThieves.poll()) != null) {
-      workSplit = true; // Will be set back to false by either mehtod
-                        // lifelineReply or lifelineSend
-      asyncAt(p, () -> {
-        lifelineReply(h);
-      });
-
-      // Synchronized necessary because of the wait call
-      synchronized (this) {
-        while (workSplit) {
-          try {
-            wait();
-          } catch (final InterruptedException e) {
-          }
-        }
+      if (bagForLifeline == null) {
+        bagForLifeline = bagSplit();
       }
+      if (bagForLifeline != null) {
+        workSplit = true; // Will be set back to false by either method
+        // lifelineReply or lifelineSend
+        asyncAt(p, () -> {
+          lifelineReply(h);
+        });
+
+        // Synchronized necessary because of the wait call
+        synchronized (this) {
+          while (workSplit) {
+            try {
+              wait();
+            } catch (final InterruptedException e) {
+            }
+          }
+        } // End of wait
+
+      } else {
+        lifelineThieves.add(p);
+        return;
+      }
+    }
+    if (bagForLifeline != null) {
+      bagsToDo.get(bagForLifeline.getClass().getName()).merge(bagForLifeline);
+      bagForLifeline = null;
     }
 
   }
@@ -248,6 +318,31 @@ final class GenericGLBProcessor extends PlaceLocalObject
       asyncAt(place(0), () -> synchronizedGiveFold((F) f));
     }
     folds.clear();
+  }
+
+  /**
+   * Wakes up a place waiting for work on its lifeline, giving it some work
+   * {@code a} on the fly in response to a {@link #lifelineSteal()}
+   * <p>
+   * Only makes sense if this place is in inactive {@link #state}.
+   *
+   * @param <B>the
+   *          type of the given {@link Bag}
+   *
+   * @param q
+   *          the work to be given to the place
+   */
+  @SuppressWarnings("unchecked")
+  private <B extends Bag<B> & Serializable> void lifelineDeal(B q) {
+    final B d = (B) bagsDone.remove(q.getClass().getName()); // Possibly null
+    if (d != null) {
+      q.merge(d);
+    }
+    q.setWorkCollector(this);
+    bagsToDo.put(q.getClass().getName(), q);
+
+    System.err.println(home + " work received");
+    run();
   }
 
   /**
@@ -311,14 +406,14 @@ final class GenericGLBProcessor extends PlaceLocalObject
   private <B extends Bag<B> & Serializable> void lifelineSend(
       Place destination) {
     System.err.println(home + " sending to " + destination);
-    final String key = bagsToDo.keySet().iterator().next();
-    final Bag<?> bag = bagsToDo.get(key);
+
     @SuppressWarnings("unchecked")
-    final B toGive = (B) bag.split();
+    final B toGive = (B) bagForLifeline;
     asyncAt(destination, () -> {
       lifelineDeal(toGive);
     });
     workSplit = false;
+    bagForLifeline = null;
     synchronized (this) {
       notifyAll();
     }
@@ -349,32 +444,6 @@ final class GenericGLBProcessor extends PlaceLocalObject
         lifelineThieves.add(h);
       });
     }
-  }
-
-  /**
-   * Wakes up a place waiting for work on its lifeline, giving it some work
-   * {@code a} on the fly in response to a {@link #lifelineSteal()}
-   * <p>
-   * Only makes sense if this place is in inactive {@link #state}.
-   *
-   * @param <B>the
-   *          type of the given {@link Bag}
-   *
-   * @param q
-   *          the work to be given to the place
-   */
-  @SuppressWarnings("unchecked")
-  private <B extends Bag<B> & Serializable> void lifelineDeal(B q) {
-    if (q != null) {
-      final B d = (B) bagsDone.remove(q.getClass().getName()); // Possibly null
-      if (d != null) {
-        q.merge(d);
-      }
-      q.setWorkCollector(this);
-      bagsToDo.put(q.getClass().getName(), q);
-    }
-    System.err.println(home + " work received");
-    run();
   }
 
   /**

@@ -497,7 +497,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
     synchronized (this) {
       state = -1;
     }
-    while (!bagsToDo.isEmpty()) {
+    do {
       while (!bagsToDo.isEmpty()) {
         final String key = bagsToDo.keySet().iterator().next();
         final Bag<?> bag = bagsToDo.get(key);
@@ -518,7 +518,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
         attempts--;
         steal();
       }
-    }
+    } while (!bagsToDo.isEmpty());
 
     synchronized (this) {
       state = -2;

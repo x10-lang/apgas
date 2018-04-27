@@ -14,13 +14,30 @@ import apgas.glb.util.TaskBag;
 public class BagQueue {
 
   /** Index of the first bag in queue */
-  int first = 0;
+  private int first = 0;
 
   /** First free index in the bag queue */
-  int last = 0;
+  private int last = 0;
 
   /** Array used as circular buffer to contain {@link Bag}s */
-  Object bags[];
+  private Object bags[] = new Bag[16];
+
+  /**
+   * Doubles the capacity of the {@link #bags} array. Copying the contained
+   * {@link Bag}s to the new array.
+   */
+  private void grow() {
+    final Object newArray[] = new Object[bags.length * 2];
+    int i = 0;
+    while (first != last) {
+      newArray[i] = bags[first];
+      i++;
+      first = (first + 1) % bags.length;
+    }
+    first = 0;
+    last = i;
+    bags = newArray;
+  }
 
   /**
    * Adds the {@link Bag} given as parameter to the end of the {@link BagQueue}.
@@ -47,6 +64,9 @@ public class BagQueue {
       // the end
       bags[last] = b;
       last = (last + 1) % bags.length;
+      if (first == last) {
+        grow();
+      }
     }
   }
 
@@ -119,14 +139,8 @@ public class BagQueue {
    * <p>
    * Creates an empty BagQueue able to handle up to bagNumber different kind of
    * {@link Bag}s.
-   *
-   * @param bagNumber
    */
   public BagQueue() {
-    bags = new Bag[16];
-    // bags = new Bag[bagNumber + 1]; // Size is + 1 in order to lift the
-    // empty/full ambiguity of the circular
-    // array.
   }
 
 }

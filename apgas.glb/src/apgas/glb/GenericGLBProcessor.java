@@ -8,7 +8,6 @@ import static apgas.Constructs.*;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -43,7 +42,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
    * @see #bagSplit()
    * @see #bagSplitReset()
    */
-  private Iterator<String> bagSplitIterator = null;
+  // private final Iterator<String> bagSplitIterator = null;
 
   /**
    * Last bag from which work was split or null. Used when trying to split work
@@ -52,16 +51,16 @@ final class GenericGLBProcessor extends PlaceLocalObject
    * @see #bagSplit()
    * @see #bagSplitReset()
    */
-  @SuppressWarnings("rawtypes")
-  private Bag bagInSplitting = null;
+  // @SuppressWarnings("rawtypes")
+  // private final Bag bagInSplitting = null;
 
   /** Collection of tasks bags to be processed */
-  @SuppressWarnings("rawtypes")
-  private final Map<String, Bag> bagsToDo;
+  // @SuppressWarnings("rawtypes")
+  private final BagQueue bagsToDo;
 
   /** Collection of tasks bags that have been processed */
-  @SuppressWarnings("rawtypes")
-  private final Map<String, Bag> bagsDone;
+  // @SuppressWarnings("rawtypes")
+  // private final Map<String, Bag> bagsDone;
 
   /**
    * Indicates if the {@link #folds} member is the folded result of all the
@@ -143,41 +142,6 @@ final class GenericGLBProcessor extends PlaceLocalObject
   private final int WORK_UNIT;
 
   /**
-   * Yields back work that was split from the bags contained in
-   * {@link #bagsToDo} or null if no work could be split
-   *
-   * @param <B>
-   *          return type parameter
-   * @return work split form this place's bags
-   */
-  @SuppressWarnings("unchecked")
-  private <B extends Bag<B> & Serializable> B bagSplit() {
-    B splitToReturn = null;
-    if (bagInSplitting == null && bagSplitIterator.hasNext()) {
-      bagInSplitting = bagsToDo.get(bagSplitIterator.next());
-    }
-    if (bagInSplitting != null) {
-      splitToReturn = (B) bagInSplitting.split();
-    }
-
-    while (splitToReturn == null && bagSplitIterator.hasNext()) {
-      bagInSplitting = bagsToDo.get(bagSplitIterator.next());
-      splitToReturn = (B) bagInSplitting.split();
-    }
-    return splitToReturn;
-  }
-
-  /**
-   * Prepares the worker for a new series of {@link #bagSplit()}. Needs to be
-   * called before any call to {@link #bagSplit()} when the {@link Bag}s
-   * contained by this place have evolved.
-   */
-  private void bagSplitReset() {
-    bagSplitIterator = bagsToDo.keySet().iterator();
-    bagInSplitting = null;
-  }
-
-  /**
    * Puts this local place into a ready to compute state.
    */
   private void clear() {
@@ -190,7 +154,6 @@ final class GenericGLBProcessor extends PlaceLocalObject
     }
     state = -2;
     bagsToDo.clear();
-    bagsDone.clear();
     folds.clear();
     workSplit = false;
     lifelineAnswer.drainPermits();
@@ -215,7 +178,6 @@ final class GenericGLBProcessor extends PlaceLocalObject
    * @param gift
    *          the work given by place {@code p}, possibly <code>null</code>.
    */
-  @SuppressWarnings("unchecked")
   private synchronized <B extends Bag<B> & Serializable> void deal(Place p,
       B gift) {
     // We are presumably receiving work from place p. Therefore this place
@@ -224,16 +186,8 @@ final class GenericGLBProcessor extends PlaceLocalObject
     // If place p couldn't share work with this place, the given q is null. A
     // check is therefore necessary.
     if (gift != null) {
-      B d = (B) bagsDone.remove(gift.getClass().getName()); // Possibly
-                                                            // null
-      if (d != null) {
-        d.merge(gift);
-      } else {
-        d = gift;
-      }
-      d.setWorkCollector(this);
-
-      bagsToDo.put(gift.getClass().getName(), d);
+      gift.setWorkCollector(this);
+      bagsToDo.addBag(gift);
     }
     // Switch back to 'running' state.
     state = -1;
@@ -260,12 +214,11 @@ final class GenericGLBProcessor extends PlaceLocalObject
     if (places == 1) {
       return;
     }
-    bagSplitReset();
     final Place h = home;
     Place p;
     while ((p = thieves.poll()) != null) {
 
-      final B toGive = bagSplit();
+      final B toGive = bagsToDo.split();
       System.err.println(p + " stole from " + home);
       uncountedAsyncAt(p, () -> {
         deal(h, toGive);
@@ -274,7 +227,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
 
     while ((p = lifelineThieves.poll()) != null) {
       if (bagForLifeline == null) {
-        bagForLifeline = bagSplit();
+        bagForLifeline = bagsToDo.split();
       }
       if (bagForLifeline != null) {
         workSplit = true; // Will be set back to false by either method
@@ -299,7 +252,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
       }
     }
     if (bagForLifeline != null) {
-      bagsToDo.get(bagForLifeline.getClass().getName()).merge(bagForLifeline);
+      bagsToDo.addBag((B) bagForLifeline);
       bagForLifeline = null;
     }
 
@@ -332,14 +285,9 @@ final class GenericGLBProcessor extends PlaceLocalObject
    * @param q
    *          the work to be given to the place
    */
-  @SuppressWarnings("unchecked")
   private <B extends Bag<B> & Serializable> void lifelineDeal(B q) {
-    final B d = (B) bagsDone.remove(q.getClass().getName()); // Possibly null
-    if (d != null) {
-      q.merge(d);
-    }
     q.setWorkCollector(this);
-    bagsToDo.put(q.getClass().getName(), q);
+    bagsToDo.addBag(q);
 
     System.err.println(home + " work received");
     run();
@@ -499,16 +447,9 @@ final class GenericGLBProcessor extends PlaceLocalObject
     }
     do {
       while (!bagsToDo.isEmpty()) {
-        final String key = bagsToDo.keySet().iterator().next();
-        final Bag<?> bag = bagsToDo.get(key);
 
-        bag.process(WORK_UNIT);
+        bagsToDo.process(WORK_UNIT);
 
-        if (bag.isEmpty()) {
-          bagsToDo.remove(key);
-          bagsDone.put(key, bag);
-          System.err.println(home + " has no more work");
-        }
         distribute();
       }
 
@@ -604,7 +545,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
   @Override
   public <B extends Bag<B> & Serializable> void addBag(B bag) {
     bag.setWorkCollector(this);
-    bagsToDo.put(bag.getClass().getName(), bag);
+    bagsToDo.addBag(bag);
   }
 
   /*
@@ -625,19 +566,10 @@ final class GenericGLBProcessor extends PlaceLocalObject
    *
    * @see apgas.glb.WorkCollector#giveBag(apgas.glb.Bag)
    */
-  @SuppressWarnings("unchecked")
   @Override
   public <B extends Bag<B> & Serializable> void giveBag(B b) {
-    final B done = (B) bagsToDo.remove(b.getClass().getName());
-    if (done != null) {
-      b.merge(done);
-    }
-    final B toDo = (B) bagsDone.remove(b.getClass().getName());
-    if (toDo != null) {
-      b.merge(toDo);
-    }
     b.setWorkCollector(this);
-    bagsToDo.put(b.getClass().getName(), b);
+    bagsToDo.addBag(b);
   }
 
   /*
@@ -717,8 +649,8 @@ final class GenericGLBProcessor extends PlaceLocalObject
       LifelineStrategy s) {
     WORK_UNIT = workUnit;
     RANDOM_STEAL_ATTEMPTS = randomStealAttempts;
-    bagsToDo = new HashMap<>();
-    bagsDone = new HashMap<>();
+    bagsToDo = new BagQueue();
+    // bagsDone = new HashMap<>();
     folds = new HashMap<>();
     incomingLifelines = s.reverseLifeline(home.id, places);
     lifelines = s.lifeline(home.id, places);

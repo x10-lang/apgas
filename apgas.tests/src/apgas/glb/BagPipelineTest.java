@@ -88,11 +88,13 @@ public class BagPipelineTest {
      */
     @Override
     public void process(int workAmount) {
-      if (qtt < workAmount) {
-        workAmount = qtt;
+      int amount = 0;
+      while (workAmount > 0 && qtt > 0) {
+        workAmount--;
+        qtt--;
+        amount++;
       }
-      qtt -= workAmount;
-      collector.giveBag(new SecondBag(workAmount));
+      collector.giveBag(new SecondBag(amount));
     }
 
     /*
@@ -103,11 +105,11 @@ public class BagPipelineTest {
     @Override
     public FirstBag split() {
       final int split = qtt / 2;
-      if (qtt == 0) {
+      if (split == 0) {
         return null;
       } else {
         qtt -= split;
-        return new FirstBag(qtt);
+        return new FirstBag(split);
       }
 
     }
@@ -171,11 +173,13 @@ public class BagPipelineTest {
      */
     @Override
     public void process(int workAmount) {
-      if (qtt < workAmount) {
-        workAmount = qtt;
+      int amount = 0;
+      while (workAmount > 0 && qtt > 0) {
+        workAmount--;
+        qtt--;
+        amount++;
       }
-      qtt -= workAmount;
-      collector.giveFold(new Sum(workAmount));
+      collector.giveFold(new Sum(amount));
     }
 
     /*
@@ -186,11 +190,11 @@ public class BagPipelineTest {
     @Override
     public SecondBag split() {
       final int split = qtt / 2;
-      if (qtt == 0) {
+      if (split == 0) {
         return null;
       } else {
         qtt -= split;
-        return new SecondBag(qtt);
+        return new SecondBag(split);
       }
 
     }

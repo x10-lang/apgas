@@ -351,7 +351,7 @@ public class UTSBag implements Serializable, Bag<UTSBag> {
     processor.addBag(taskBag);
     taskBag.seed(md, 19, depth - 2);
 
-    System.out.println("Warmup...");
+    // System.out.println("Warmup...");
 
     processor.compute();
 
@@ -360,22 +360,26 @@ public class UTSBag implements Serializable, Bag<UTSBag> {
     processor.addBag(secondBag);
     secondBag.seed(md, 19, depth);
 
-    System.out.println("Starting...");
+    // System.out.println("Starting...");
     final long start = System.nanoTime();
     processor.compute();
 
     final long computationEnd = System.nanoTime();
-    System.out.println("Finished.");
+    // System.out.println("Finished.");
 
-    final long count = ((Sum) processor.result().toArray()[0]).sum;
-    final long gatherEnd = System.nanoTime();
+    // final long count = ((Sum) processor.result().toArray()[0]).sum;
+    // final long gatherEnd = System.nanoTime();
 
     final long computationTime = computationEnd - start;
-    final long gatherTime = gatherEnd - computationEnd;
+    // final long gatherTime = gatherEnd - computationEnd;
 
-    System.out.println("Depth: " + depth + ", Performance: " + count + "/"
-        + sub("" + computationTime / 1e9, 0, 6) + " = "
-        + sub("" + (count / (computationTime / 1e3)), 0, 6) + "M nodes/s");
-    System.out.println("Gather time: " + sub("" + gatherTime / 1e9, 0, 6));
+    /**
+     * System.out.println("Depth: " + depth + ", Performance: " + count + "/" +
+     * sub("" + computationTime / 1e9, 0, 6) + " = " + sub("" + (count /
+     * (computationTime / 1e3)), 0, 6) + "M nodes/s");
+     * System.out.println("Gather time: " + sub("" + gatherTime / 1e9, 0, 6));
+     *
+     */
+    System.out.println(sub("" + computationTime / 1e9, 0, 6));
   }
 }

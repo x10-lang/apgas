@@ -39,7 +39,7 @@ public class UTSTest {
   static final int EXPECTED_NODES = 264459392;
 
   /** LoopGLBProcessor used to perform the computation */
-  static GLBProcessor processor;
+  static GLBProcessor<Sum> processor;
 
   /** Message dialect used by UTS computation to generate the tree */
   static MessageDigest MD;
@@ -50,7 +50,7 @@ public class UTSTest {
    * @param p
    *          GLBProcessor to be tested
    */
-  public UTSTest(GLBProcessor p) {
+  public UTSTest(GLBProcessor<Sum> p) {
     processor = p;
     MD = UTSBag.encoder();
 
@@ -80,13 +80,14 @@ public class UTSTest {
 
     processor.compute();
 
-    final long count = ((Sum) processor.result().toArray()[0]).sum;
-    assertEquals(EXPECTED_NODES, count);
+    final Sum s = processor.result();
+    assert s != null;
+    assertEquals(EXPECTED_NODES, s.sum);
   }
 
   /**
    * Creates the {@link GLBProcessor} implementation to be tested.
-   * 
+   *
    * @return collection of arguments to be given to the constructor of this test
    *         class.
    */

@@ -6,10 +6,13 @@ package apgas.glb;
 import static org.junit.Assert.*;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Collection;
 
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import apgas.glb.example.Sum;
 
@@ -17,17 +20,21 @@ import apgas.glb.example.Sum;
  * @author Patrick Finnerty
  *
  */
+@RunWith(Parameterized.class)
 public class InheritanceTest {
 
   /** Computation ressource used for the test */
-  static GLBProcessor processor;
+  GLBProcessor<Sum> processor;
 
   /**
-   * Prepares a LoopGLBProcessor for computation
+   * Constructor
+   *
+   * @param p
+   *          instance to be tested
    */
-  @BeforeClass
-  public static void setUpBeforeClass() {
-    processor = GLBProcessorFactory.LoopGLBProcessor(50, 1);
+  public InheritanceTest(GLBProcessor<Sum> p) {
+
+    processor = p;
   }
 
   /**
@@ -49,8 +56,22 @@ public class InheritanceTest {
     final First bag = new First(RESULT);
     processor.addBag(bag);
     processor.compute();
-    final Sum s = (Sum) processor.result().iterator().next();
+    final Sum s = processor.result();
+    assert s != null;
     assertEquals(RESULT, s.sum);
+  }
+
+  /**
+   * Yields the {@link GLBProcessor} implementations to be tested.
+   *
+   * @return collection of GLBProcessor
+   */
+  @Parameterized.Parameters
+  public static Collection<Object[]> toTest() {
+    return Arrays.asList(
+        new Object[] { GLBProcessorFactory.LoopGLBProcessor(50, 1) },
+        new Object[] {
+            GLBProcessorFactory.GLBProcessor(50, 1, new HypercubeStrategy()) });
   }
 
   /**
@@ -60,13 +81,14 @@ public class InheritanceTest {
    *
    */
   @SuppressWarnings("serial")
-  private abstract class AbstractBag implements Bag<AbstractBag>, Serializable {
+  private abstract class AbstractBag
+      implements Bag<AbstractBag, Sum>, Serializable {
 
     /** Data shared amongst children */
     public int data;
 
     /** WorkCollector responsible for processing the tasks spawned */
-    protected WorkCollector processor;
+    protected WorkCollector<Sum> processor;
 
     /**
      * Constructor
@@ -106,9 +128,14 @@ public class InheritanceTest {
      * @see apgas.glb.Bag#setProcessor(apgas.glb.WorkCollector)
      */
     @Override
-    public void setWorkCollector(WorkCollector p) {
+    public void setWorkCollector(WorkCollector<Sum> p) {
       processor = p;
 
+    }
+
+    @Override
+    public Sum submit() {
+      return null;
     }
   }
 
@@ -159,8 +186,13 @@ public class InheritanceTest {
     }
   }
 
-  @SuppressWarnings("serial")
   private class Second extends AbstractBag {
+
+    /**
+     *
+     */
+    private static final long serialVersionUID = -6762267257258758078L;
+    int result = 0;
 
     public Second(int i) {
       super(i);
@@ -186,10 +218,15 @@ public class InheritanceTest {
     @Override
     public void process(int workAmount) {
       while (data > 0 && workAmount > 0) {
-        processor.giveFold(new Sum(1));
+        result++;
         data--;
         workAmount--;
       }
+    }
+
+    @Override
+    public Sum submit() {
+      return new Sum(result);
     }
   }
 }

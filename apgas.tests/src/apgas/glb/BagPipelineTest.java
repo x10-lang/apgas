@@ -25,7 +25,7 @@ import org.junit.runners.Parameterized;
 public class BagPipelineTest {
 
   /** Instance in testing */
-  private final GLBProcessor processor;
+  private final GLBProcessor<Sum> processor;
 
   /**
    * Tests a simple to tasks pipeline.
@@ -35,12 +35,8 @@ public class BagPipelineTest {
     final int RESULT = 500;
     processor.addBag(new FirstBag(RESULT));
     processor.compute();
-    @SuppressWarnings("rawtypes")
-    final Collection<Fold> res = processor.result();
-    assertEquals(1, res.size());
-    final Fold<?> f = res.iterator().next();
-    assert f instanceof Sum;
-    final Sum s = (Sum) f;
+    final Sum s = processor.result();
+    assert s != null;
     assertEquals(RESULT, s.sum);
   }
 
@@ -58,7 +54,7 @@ public class BagPipelineTest {
    * @param p
    *          the GLBProcessor instance to be tested
    */
-  public BagPipelineTest(GLBProcessor p) {
+  public BagPipelineTest(GLBProcessor<Sum> p) {
     processor = p;
   }
 
@@ -75,11 +71,11 @@ public class BagPipelineTest {
             GLBProcessorFactory.GLBProcessor(50, 1, new HypercubeStrategy()) });
   }
 
-  private class FirstBag implements Bag<FirstBag>, Serializable {
+  private class FirstBag implements Bag<FirstBag, Sum>, Serializable {
 
     private static final long serialVersionUID = -6717229606753663109L;
     private int qtt;
-    private WorkCollector collector;
+    private WorkCollector<Sum> collector;
 
     /*
      * (non-Javadoc)
@@ -140,7 +136,7 @@ public class BagPipelineTest {
      * @see apgas.glb.Bag#setWorkCollector(apgas.glb.WorkCollector)
      */
     @Override
-    public void setWorkCollector(WorkCollector p) {
+    public void setWorkCollector(WorkCollector<Sum> p) {
       collector = p;
     }
 
@@ -153,18 +149,28 @@ public class BagPipelineTest {
     public FirstBag(int amount) {
       qtt = amount;
     }
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see apgas.glb.Bag#submit()
+     */
+    @Override
+    public Sum submit() {
+      return null;
+    }
   }
 
-  private class SecondBag implements Bag<SecondBag>, Serializable {
+  private class SecondBag implements Bag<SecondBag, Sum>, Serializable {
 
     /**
      *
      */
     private static final long serialVersionUID = -2184650631781234106L;
 
-    private int qtt;
+    int amount = 0;
 
-    private WorkCollector collector;
+    private int qtt;
 
     /*
      * (non-Javadoc)
@@ -173,13 +179,12 @@ public class BagPipelineTest {
      */
     @Override
     public void process(int workAmount) {
-      int amount = 0;
+
       while (workAmount > 0 && qtt > 0) {
         workAmount--;
         qtt--;
         amount++;
       }
-      collector.giveFold(new Sum(amount));
     }
 
     /*
@@ -225,8 +230,7 @@ public class BagPipelineTest {
      * @see apgas.glb.Bag#setWorkCollector(apgas.glb.WorkCollector)
      */
     @Override
-    public void setWorkCollector(WorkCollector p) {
-      collector = p;
+    public void setWorkCollector(WorkCollector<Sum> p) { // Not used
     }
 
     /**
@@ -238,9 +242,19 @@ public class BagPipelineTest {
     public SecondBag(int amount) {
       qtt = amount;
     }
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see apgas.glb.Bag#submit()
+     */
+    @Override
+    public Sum submit() {
+      return new Sum(amount);
+    }
   }
 
-  private class Sum implements Fold<Sum>, Serializable {
+  private class Sum implements Result<Sum>, Serializable {
 
     /** Serial Version UID */
     private static final long serialVersionUID = 1939234687984405861L;
@@ -251,21 +265,11 @@ public class BagPipelineTest {
     /*
      * (non-Javadoc)
      *
-     * @see apgas.glb.Fold#fold(apgas.glb.Fold)
+     * @see apgas.glb.Result#fold(apgas.glb.Result)
      */
     @Override
     public void fold(Sum f) {
       sum += f.sum;
-    }
-
-    /*
-     * (non-Javadoc)
-     *
-     * @see apgas.glb.Fold#id()
-     */
-    @Override
-    public String id() {
-      return "";
     }
 
     public Sum(int s) {

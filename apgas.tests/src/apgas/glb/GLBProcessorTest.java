@@ -28,7 +28,7 @@ public class GLBProcessorTest {
   /**
    * LoopGLBProcessor instance used for the tests.
    */
-  private GLBProcessor processor = null;
+  private GLBProcessor<Sum> processor = null;
 
   /**
    * Creates a new processor instance to be used during the tests
@@ -36,7 +36,7 @@ public class GLBProcessorTest {
    * @param computer
    *          GLBProcessor instance to be tested
    */
-  public GLBProcessorTest(GLBProcessor computer) {
+  public GLBProcessorTest(GLBProcessor<Sum> computer) {
     processor = computer;
   }
 
@@ -51,34 +51,10 @@ public class GLBProcessorTest {
 
     processor.compute();
 
-    @SuppressWarnings("rawtypes")
-    final Collection<Fold> res = processor.result();
-    assertEquals(1, res.size());
-    assert (res.toArray()[0] instanceof Sum);
+    final Sum res = processor.result();
+    assert res != null;
 
-    final Sum s = (Sum) res.toArray()[0];
-    assertEquals(value, s.sum);
-  }
-
-  /**
-   * Tests the functionning of the folding mechanism of a Minimum class
-   *
-   * @param minimum
-   *          the target result
-   * @param qtt
-   *          the number of Min instance to be generated
-   */
-  private void min(int minimum, int qtt) {
-    processor.addBag(new SpawnMinimum(minimum, qtt));
-    processor.compute();
-
-    @SuppressWarnings("rawtypes")
-    final Collection<Fold> res = processor.result();
-    assertEquals(1, res.size());
-    assert (res.toArray()[0] instanceof Min);
-
-    final Min m = (Min) res.toArray()[0];
-    assertEquals(minimum, m.value);
+    assertEquals(value, res.sum);
   }
 
   /**
@@ -90,41 +66,21 @@ public class GLBProcessorTest {
   }
 
   /**
-   * Tests the fold of 30 Min instances. No work sharing in this case as the
-   * number of tasks to process is lower than the workAmount given to the
-   * {@link WorkCollector}
-   */
-  @Test(timeout = 5000)
-  public void minTest30() {
-    min(0, 30);
-  }
-
-  /**
-   * Tests the fold of 500 Min instances with work stealing being performed as
-   * the number of tasks to process exceeds the work amount given to hte
-   * {@link WorkCollector}.
-   */
-  @Test(timeout = 5000)
-  public void minTest500() {
-    min(0, 500);
-  }
-
-  /**
    * Tests the behaviour of the {@link LoopGLBProcessor#reset()} method.
    */
   @Test(timeout = 5000)
   public void resetTest() {
-    min(0, 30);
+
+    sum(10);
+    processor.compute();
     processor.reset();
 
-    @SuppressWarnings("rawtypes")
-    Collection<Fold> res = processor.result();
-    assertEquals(0, res.size());
+    Sum res = processor.result();
+    assert res == null;
 
-    processor.compute(); // Re-launching computation but should be empty
-
-    res = processor.result(); // Result should still be empty
-    assertEquals(0, res.size());
+    processor.compute(); // Re-launching empty computation
+    res = processor.result();
+    assert res == null;
   }
 
   /**
@@ -163,7 +119,7 @@ public class GLBProcessorTest {
    * @author Patrick Finnerty
    *
    */
-  private class Sum implements Fold<Sum>, Serializable {
+  private class Sum implements Result<Sum>, Serializable {
     /** Serial Version UID */
     private static final long serialVersionUID = -3766700434988512611L;
     /** Message to be displayed by this task */
@@ -172,11 +128,6 @@ public class GLBProcessorTest {
     @Override
     public void fold(Sum s) {
       sum += s.sum;
-    }
-
-    @Override
-    public String id() {
-      return "";
     }
 
     /**
@@ -191,21 +142,20 @@ public class GLBProcessorTest {
   }
 
   /**
-   * {@link Bag} used to spawn a pre-determined number of Sum {@link Fold}s
+   * {@link Bag} used to spawn a pre-determined number of Sum {@link Result}s
    *
    * @author Patrick Finnerty
    *
    */
-  private class SpawnSum implements Bag<SpawnSum>, Serializable {
+  private class SpawnSum implements Bag<SpawnSum, Sum>, Serializable {
 
     /** Serial Version UID */
     private static final long serialVersionUID = 6180125722875830207L;
 
-    /** WorkCollector in charge of this Bag */
-    WorkCollector processor;
-
     /** Number of Sum yet to spawn */
     int toSpawn;
+
+    int result = 0;
 
     /*
      * (non-Javadoc)
@@ -215,7 +165,7 @@ public class GLBProcessorTest {
     @Override
     public void process(int workAmount) {
       while (!isEmpty() && workAmount > 0) {
-        processor.giveFold(new Sum(1));
+        result++;
         workAmount--;
         toSpawn--;
       }
@@ -253,16 +203,6 @@ public class GLBProcessorTest {
       return toSpawn == 0;
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see apgas.glb.Bag#setProcessor(apgas.glb.WorkCollector)
-     */
-    @Override
-    public void setWorkCollector(WorkCollector p) {
-      processor = p;
-    }
-
     /**
      * Constructor
      *
@@ -272,124 +212,24 @@ public class GLBProcessorTest {
     public SpawnSum(int qtt) {
       toSpawn = qtt;
     }
-  }
-
-  /**
-   * Class keeping the minimum value on integers
-   *
-   * @author Patrick Finnerty
-   *
-   */
-  private class Min implements Fold<Min>, Serializable {
-    /** Serial Version UID */
-    private static final long serialVersionUID = 2117157664169192829L;
-    /** Minimum value */
-    public int value;
-
-    @Override
-    public void fold(Min m) {
-      if (m.value < value) {
-        value = m.value;
-      }
-    }
-
-    @Override
-    public String id() {
-      return "";
-    }
-
-    /**
-     * Constructor
-     *
-     * @param v
-     *          the initial minimum value
-     */
-    public Min(int v) {
-      value = v;
-    }
-  }
-
-  private class SpawnMinimum implements Bag<SpawnMinimum>, Serializable {
-    /** Serial version UID */
-    private static final long serialVersionUID = 5783449607642360994L;
-    int min;
-    int qtt;
-    WorkCollector processor;
 
     /*
      * (non-Javadoc)
      *
-     * @see apgas.glb.Bag#process(int)
+     * @see apgas.glb.Bag#submit()
      */
     @Override
-    public void process(int workAmount) {
-      while (workAmount > 0 && qtt > 1) {
-        processor.giveFold(new Min(min + 42));
-        workAmount--;
-        qtt--;
-      }
-      if (workAmount > 0) {
-        processor.giveFold(new Min(min));
-        qtt = 0;
-      }
+    public Sum submit() {
+      return new Sum(result);
     }
 
     /*
      * (non-Javadoc)
      *
-     * @see apgas.glb.Bag#split()
+     * @see apgas.glb.Bag#setWorkCollector(apgas.glb.WorkCollector)
      */
     @Override
-    public SpawnMinimum split() {
-      final int toSend = qtt / 2;
-
-      qtt -= toSend;
-
-      return new SpawnMinimum(min, toSend);
-    }
-
-    /*
-     * (non-Javadoc)
-     *
-     * @see apgas.glb.Bag#merge(apgas.glb.Bag)
-     */
-    @Override
-    public void merge(SpawnMinimum b) {
-      min = b.min;
-      qtt += b.qtt;
-    }
-
-    /*
-     * (non-Javadoc)
-     *
-     * @see apgas.glb.Bag#isEmpty()
-     */
-    @Override
-    public boolean isEmpty() {
-      return qtt <= 0;
-    }
-
-    /*
-     * (non-Javadoc)
-     *
-     * @see apgas.glb.Bag#setProcessor(apgas.glb.WorkCollector)
-     */
-    @Override
-    public void setWorkCollector(WorkCollector p) {
-      processor = p;
-    }
-
-    /**
-     * Constructor
-     *
-     * @param m
-     *          minimum value to be spawned
-     * @param amount
-     *          number of Min instance to be spawned
-     */
-    public SpawnMinimum(int m, int amount) {
-      min = m;
-      qtt = amount;
+    public void setWorkCollector(WorkCollector<Sum> p) { // Not used
     }
   }
 }

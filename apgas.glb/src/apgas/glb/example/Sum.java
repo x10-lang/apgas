@@ -8,16 +8,17 @@ import java.io.Serializable;
 import apgas.glb.Result;
 
 /**
- * Performs the addition on integers.
+ *
+ * Implementation of the {@link Result} interface that performs the addition on
+ * {@code long} integers. The class also implements interface
+ * {@link Serializable} in order to be used by the GLB library.
  *
  * @author Patrick Finnerty
  *
  */
 public class Sum implements Result<Sum>, Serializable {
 
-  /**
-   * Serial Version UID
-   */
+  /** Serial Version UID */
   private static final long serialVersionUID = 3582168956043482749L;
 
   /** Integer in which the sum is performed */
@@ -34,12 +35,12 @@ public class Sum implements Result<Sum>, Serializable {
   }
 
   /**
-   * Construtor
+   * Constructor
    *
    * @param s
-   *          the initial value of the sum
+   *          initial value for the sum
    */
-  public Sum(int s) {
+  public Sum(long s) {
     sum = s;
   }
 

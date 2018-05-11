@@ -2,9 +2,9 @@
  *
  */
 /**
- * This package contains a few examples of computation performed using the glb
- * package.
- * 
+ * This package contains an examples of computation performed using the
+ * apgas.glb package.
+ *
  * @author Patrick Finnerty
  *
  */

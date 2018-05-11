@@ -15,20 +15,21 @@ import apgas.glb.HypercubeStrategy;
 import apgas.glb.WorkCollector;
 
 /**
- * Unbalanced Tree Search computation. This class is an adapatation from the
- * apgas.examples.UTS class written by to fit the apgas.glb api.
+ * {@link Bag} implementation of an Unbalanced Tree Search computation.
+ * <p>
+ * This class is an adapatation from the apgas.examples.UTS class to fit the
+ * {@link apgas.glb.GLBProcessor} interface. The result returned by
+ * {@link UTSBag} is the number of nodes explored, using the {@link Sum} class.
  *
  * @author Patrick Finnerty
  *
  */
 public class UTSBag implements Serializable, Bag<UTSBag, Sum> {
 
-  /**
-   * Serial Version UID
-   */
+  /** Serial Version UID */
   private static final long serialVersionUID = 2200935927036145803L;
 
-  /** branching factor: 4 */
+  /** Branching factor: 4 */
   private static final double den = Math.log(4.0 / (1.0 + 4.0));
 
   /**
@@ -305,10 +306,7 @@ public class UTSBag implements Serializable, Bag<UTSBag, Sum> {
    */
   @Override
   public Sum submit() {
-
-    final Sum toReturn = new Sum(count);
-    count = 0;
-    return toReturn;
+    return new Sum(count);
   }
 
   /*
@@ -328,7 +326,7 @@ public class UTSBag implements Serializable, Bag<UTSBag, Sum> {
    */
   @Override
   public void setWorkCollector(WorkCollector<Sum> p) {
-  } // Nothing to do
+  } // Not used
 
   public static String sub(String str, int start, int end) {
     return str.substring(start, Math.min(end, str.length()));
@@ -357,7 +355,7 @@ public class UTSBag implements Serializable, Bag<UTSBag, Sum> {
     processor.addBag(taskBag);
     taskBag.seed(md, 19, depth - 2);
 
-    // System.out.println("Warmup...");
+    System.out.println("Warmup...");
 
     processor.compute();
 
@@ -366,26 +364,23 @@ public class UTSBag implements Serializable, Bag<UTSBag, Sum> {
     processor.addBag(secondBag);
     secondBag.seed(md, 19, depth);
 
-    // System.out.println("Starting...");
+    System.out.println("Starting...");
     final long start = System.nanoTime();
     processor.compute();
 
     final long computationEnd = System.nanoTime();
-    // System.out.println("Finished.");
+    System.out.println("Finished.");
 
-    // final long count = ((Sum) processor.result().toArray()[0]).sum;
-    // final long gatherEnd = System.nanoTime();
+    final long count = processor.result().sum;
+    final long gatherEnd = System.nanoTime();
 
     final long computationTime = computationEnd - start;
-    // final long gatherTime = gatherEnd - computationEnd;
+    final long gatherTime = gatherEnd - computationEnd;
 
-    /**
-     * System.out.println("Depth: " + depth + ", Performance: " + count + "/" +
-     * sub("" + computationTime / 1e9, 0, 6) + " = " + sub("" + (count /
-     * (computationTime / 1e3)), 0, 6) + "M nodes/s");
-     * System.out.println("Gather time: " + sub("" + gatherTime / 1e9, 0, 6));
-     *
-     */
-    System.out.println(sub("" + computationTime / 1e9, 0, 6));
+    System.out.println("Depth: " + depth + ", Performance: " + count + "/"
+        + sub("" + computationTime / 1e9, 0, 6) + " = "
+        + sub("" + (count / (computationTime / 1e3)), 0, 6) + "M nodes/s");
+    System.out.println("Gather time: " + sub("" + gatherTime / 1e9, 0, 6));
+
   }
 }

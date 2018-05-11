@@ -8,12 +8,12 @@ import java.io.Serializable;
 /**
  * {@link WorkCollector} provides services to the {@link Bag}s it is responsible
  * for, namely it enables {@link Bag}s to give it new {@link Bag}s to compute
- * and new {@link Fold} to handle.
+ * and new {@link Result} to handle.
  *
  * @author Patrick Finnerty
  *
  */
-public interface WorkCollector {
+public interface WorkCollector<R extends Result<R>> {
 
   /**
    * Adds the bag given as parameter to the bags to be processed by the
@@ -30,17 +30,5 @@ public interface WorkCollector {
    * @param b
    *          the task bag to be added to the WorkCollector
    */
-  public <B extends Bag<B> & Serializable> void giveBag(B b);
-
-  /**
-   * Folds the given {@link Fold} into an existing {@link Fold} instance of the
-   * same type or keeps it in order to be folded with later {@link Fold}s of the
-   * same type.
-   *
-   * @param <F>
-   *          the type of {@link Fold} to be folded
-   * @param fold
-   *          the {@link Fold} to be folded by the {@link WorkCollector}.
-   */
-  public <F extends Fold<F> & Serializable> void giveFold(F fold);
+  public <B extends Bag<B, R> & Serializable> void giveBag(B b);
 }

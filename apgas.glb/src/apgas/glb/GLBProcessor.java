@@ -4,11 +4,10 @@
 package apgas.glb;
 
 import java.io.Serializable;
-import java.util.Collection;
 
 /**
  * Initial {@link Bag}s to be processed can be added to this instance by calling
- * {@link #addBag(Bag)}. Computation is launched using the {@link #compute()}
+ * {@link #addBag(Bag))}. Computation is launched using the {@link #compute()}
  * method. If the programmer wishes to use same computing instance for several
  * successive computations, method {@link #reset()} should be called before
  * adding the new {@link Bag}s to be processed to avoid existing results from
@@ -17,7 +16,7 @@ import java.util.Collection;
  * @author Patrick Finnerty
  *
  */
-public interface GLBProcessor {
+public interface GLBProcessor<R extends Result<R> & Serializable> {
 
   /**
    * Allows to give some work to be computed by the GLBProcessor.
@@ -32,31 +31,30 @@ public interface GLBProcessor {
    * @param bag
    *          the work to be computed by the GLBProcessor
    */
-  public <B extends Bag<B> & Serializable> void addBag(B bag);
+  public <B extends Bag<B, R> & Serializable> void addBag(B bag);
 
   /**
    * Launches the computation of the work given to the GLBProcessor. The results
    * will then be available by calling the {@link #result()} method.
    * <p>
    * Note that if you add some extra computation without calling
-   * {@link #reset()} beforehand, the existing {@link Bag}s and {@link Fold}s
+   * {@link #reset()} beforehand, the existing {@link Bag}s and {@link Result}s
    * from the previous computation will still be there and might interfere with
    * your next computation.
    */
   public void compute();
 
   /**
-   * Discards all {@link Bag}s and {@link Fold}s remaining in the GLBProcessor
+   * Discards all {@link Bag}s and {@link Result}s remaining in the GLBProcessor
    * to make it clean and ready for some new computation.
    */
   public void reset();
 
   /**
-   * Gives back the {@link Fold}s computed by the {@link GLBProcessor} in the
+   * Gives back the {@link Result}s computed by the {@link GLBProcessor} in the
    * previous computation.
    *
-   * @return collection of {@link Fold}s
+   * @return instance of the user-defined Result instance
    */
-  @SuppressWarnings("rawtypes")
-  public Collection<Fold> result();
+  public R result();
 }

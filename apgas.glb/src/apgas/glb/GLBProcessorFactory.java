@@ -42,12 +42,13 @@ public class GLBProcessorFactory {
    * @return a new computing instance
    * @see #LoopGLBProcessor(int, int)
    */
-  public static GLBProcessor LoopGLBProcessor() {
+  public static GLBProcessor<?> LoopGLBProcessor() {
     if (System.getProperty(Configuration.APGAS_PLACES) == null) {
       System.setProperty(Configuration.APGAS_PLACES, DEFAULT_PLACE_COUNT);
     }
 
-    final LoopGLBProcessor glb = PlaceLocalObject.make(places(),
+    @SuppressWarnings("rawtypes")
+    final LoopGLBProcessor<?> glb = PlaceLocalObject.make(places(),
         () -> new LoopGLBProcessor(DEFAULT_WORK_UNIT,
             DEFAULT_RANDOM_STEAL_ATTEMPTS));
     return glb;
@@ -72,12 +73,14 @@ public class GLBProcessorFactory {
    *          <em>positive or nil</em>
    * @return a new computing instance
    */
-  public static GLBProcessor LoopGLBProcessor(int workUnit, int stealAttempts) {
+  public static GLBProcessor<?> LoopGLBProcessor(int workUnit,
+      int stealAttempts) {
     if (System.getProperty(Configuration.APGAS_PLACES) == null) {
       System.setProperty(Configuration.APGAS_PLACES, DEFAULT_PLACE_COUNT);
     }
 
-    final LoopGLBProcessor glb = PlaceLocalObject.make(places(),
+    @SuppressWarnings("rawtypes")
+    final LoopGLBProcessor<?> glb = PlaceLocalObject.make(places(),
         () -> new LoopGLBProcessor(workUnit, stealAttempts));
     return glb;
   }
@@ -85,7 +88,7 @@ public class GLBProcessorFactory {
   /**
    * Creates a generic GLBProcessor following the given workUnit stealAttempts
    * and lifeline strategy provided
-   * 
+   *
    * @param <S>
    *          Type of the strategy parameter
    * @param workUnit
@@ -97,13 +100,14 @@ public class GLBProcessorFactory {
    *          the lifelines strategy to be used in this GLBProcessor instance
    * @return a new computing instance
    */
-  public static <S extends LifelineStrategy & Serializable> GLBProcessor GLBProcessor(
+  public static <S extends LifelineStrategy & Serializable, R extends Result<R> & Serializable> GLBProcessor<R> GLBProcessor(
       int workUnit, int stealAttempts, S strategy) {
     if (System.getProperty(Configuration.APGAS_PLACES) == null) {
       System.setProperty(Configuration.APGAS_PLACES, DEFAULT_PLACE_COUNT);
     }
 
-    final GLBProcessor glb = PlaceLocalObject.make(places(),
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    final GLBProcessor<R> glb = PlaceLocalObject.make(places(),
         () -> new GenericGLBProcessor(workUnit, stealAttempts, strategy));
     return glb;
   }

@@ -27,7 +27,26 @@ import java.io.Serializable;
  * @author Patrick Finnerty
  *
  */
-public interface Bag<B extends Bag<B>> {
+public interface Bag<B extends Bag<B, R>, R extends Result<R>> {
+
+  /**
+   * Indicates if the taskBag is empty, that is if all the tasks were performed.
+   *
+   * @return true if there are no tasks left in the Bag
+   */
+  public boolean isEmpty();
+
+  /**
+   * Merges the task bag given as parameter into this instance.
+   * <p>
+   * Unlike {@link #split()} which can return {@code null}, the provided
+   * parameter will never be null (this is checked by the
+   * {@link WorkCollector}).
+   *
+   * @param b
+   *          the tasks to be added to this task bag
+   */
+  public void merge(B b);
 
   /**
    * Processes a certain amount of work as specified by the parameter and
@@ -38,6 +57,14 @@ public interface Bag<B extends Bag<B>> {
    *          amount of work to process
    */
   public void process(int workAmount);
+
+  /**
+   * Allows the Bag to submit its result into the provided (user defined) data
+   * structure.
+   *
+   * @return new instance of the user defined {@link Result} data structure
+   */
+  public R submit();
 
   /**
    * Creates a new instance of Bag which contains tasks shared by this instance
@@ -53,25 +80,6 @@ public interface Bag<B extends Bag<B>> {
   public B split();
 
   /**
-   * Merges the task bag given as parameter into this instance.
-   * <p>
-   * Unlike {@link #split()} which can return {@code null}, the provided
-   * parameter will never be null (this is checked by the
-   * {@link WorkCollector}).
-   *
-   * @param b
-   *          the tasks to be added to this task bag
-   */
-  public void merge(B b);
-
-  /**
-   * Indicates if the taskBag is empty, that is if all the tasks were performed.
-   *
-   * @return true if there are no tasks left in the Bag
-   */
-  public boolean isEmpty();
-
-  /**
    * Sets a WorkCollector which will handle work spawned by this Bag. If at some
    * point the Bag needs to create some new Bag that should be computed, a
    * {@link WorkCollector} should be kept as a member of the class and be set by
@@ -85,5 +93,5 @@ public interface Bag<B extends Bag<B>> {
    * @param p
    *          the new {@link WorkCollector} instance to be kept.
    */
-  public void setWorkCollector(WorkCollector p);
+  public void setWorkCollector(WorkCollector<R> p);
 }

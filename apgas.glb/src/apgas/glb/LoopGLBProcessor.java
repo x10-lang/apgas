@@ -6,10 +6,6 @@ package apgas.glb;
 import static apgas.Constructs.*;
 
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -30,35 +26,11 @@ import apgas.util.PlaceLocalObject;
  * @author Patrick Finnerty
  *
  */
-final class LoopGLBProcessor extends PlaceLocalObject
-    implements WorkCollector, GLBProcessor {
-
-  /**
-   * Iterator used to go through the bagsTodo when trying to split work for
-   * thieves.
-   *
-   * @see #bagSplit()
-   * @see #bagSplitReset()
-   */
-  private Iterator<String> bagSplitIterator = null;
-
-  /**
-   * Last bag from which work was split or null. Used when trying to split work
-   * for thieves
-   *
-   * @see #bagSplit()
-   * @see #bagSplitReset()
-   */
-  @SuppressWarnings("rawtypes")
-  private Bag bagInSplitting = null;
+final class LoopGLBProcessor<R extends Result<R> & Serializable>
+    extends PlaceLocalObject implements GLBProcessor<R> {
 
   /** Collection of tasks bags to be processed */
-  @SuppressWarnings("rawtypes")
-  private final Map<String, Bag> bagsToDo;
-
-  /** Collection of tasks bags that have been processed */
-  @SuppressWarnings("rawtypes")
-  private final Map<String, Bag> bagsDone;
+  private final BagQueue<R> bagsToDo;
 
   /**
    * Indicates if the {@link #folds} member is the folded result of all the
@@ -66,9 +38,8 @@ final class LoopGLBProcessor extends PlaceLocalObject
    */
   private boolean foldCompleted = false;
 
-  /** Collection of folds handled by this computation place */
-  @SuppressWarnings("rawtypes")
-  private final Map<String, Fold> folds;
+  /** Result instance for this local place */
+  private R result = null;
 
   /** Brings the APGAS place id to the class {@link LoopGLBProcessor} */
   private final Place home = here();
@@ -125,41 +96,6 @@ final class LoopGLBProcessor extends PlaceLocalObject
   private final int WORK_UNIT;
 
   /**
-   * Yields back work that was split from the bags contained in
-   * {@link #bagsToDo} or null if no work could be split
-   *
-   * @param <B>
-   *          return type parameter
-   * @return work split form this place's bags
-   */
-  @SuppressWarnings("unchecked")
-  private <B extends Bag<B> & Serializable> B bagSplit() {
-    B splitToReturn = null;
-    if (bagInSplitting == null && bagSplitIterator.hasNext()) {
-      bagInSplitting = bagsToDo.get(bagSplitIterator.next());
-    }
-    if (bagInSplitting != null) {
-      splitToReturn = (B) bagInSplitting.split();
-    }
-
-    while (splitToReturn == null && bagSplitIterator.hasNext()) {
-      bagInSplitting = bagsToDo.get(bagSplitIterator.next());
-      splitToReturn = (B) bagInSplitting.split();
-    }
-    return splitToReturn;
-  }
-
-  /**
-   * Prepares the worker for a new series of {@link #bagSplit()}. Needs to be
-   * called before any call to {@link #bagSplit()} when the {@link Bag}s
-   * contained by this place have evolved.
-   */
-  private void bagSplitReset() {
-    bagSplitIterator = bagsToDo.keySet().iterator();
-    bagInSplitting = null;
-  }
-
-  /**
    * Puts this local place to a ready to compute state.
    */
   private void clear() {
@@ -167,8 +103,7 @@ final class LoopGLBProcessor extends PlaceLocalObject
     lifeline.set(home.id != 3);
     state = -2;
     bagsToDo.clear();
-    bagsDone.clear();
-    folds.clear();
+    result = null;
   }
 
   /**
@@ -187,8 +122,7 @@ final class LoopGLBProcessor extends PlaceLocalObject
    * @param gift
    *          the work given by place {@code p}, possibly <code>null</code>.
    */
-  @SuppressWarnings("unchecked")
-  private synchronized <B extends Bag<B> & Serializable> void deal(Place p,
+  private synchronized <B extends Bag<B, R> & Serializable> void deal(Place p,
       B gift) {
     // We are presumably receiving work from place p. Therefore this place
     // should be in state 'p'.
@@ -196,16 +130,7 @@ final class LoopGLBProcessor extends PlaceLocalObject
     // If place p couldn't share work with this place, the given q is null. A
     // check is therefore necessary.
     if (gift != null) {
-      B d = (B) bagsDone.remove(gift.getClass().getName()); // Possibly
-                                                            // null
-      if (d != null) {
-        d.merge(gift);
-      } else {
-        d = gift;
-      }
-      d.setWorkCollector(this);
-
-      bagsToDo.put(gift.getClass().getName(), d);
+      bagsToDo.giveBag(gift);
     }
     // Switch back to 'running' state.
     state = -1;
@@ -224,22 +149,21 @@ final class LoopGLBProcessor extends PlaceLocalObject
    * @param <B>the
    *          type of offered work given to thieves
    */
-  private <B extends Bag<B> & Serializable> void distribute() {
+  private <B extends Bag<B, R> & Serializable> void distribute() {
     if (places == 1) {
       return;
     }
     Place p;
-    bagSplitReset();
 
     while ((p = thieves.poll()) != null) {
-      final B toGive = bagSplit();
+      final B toGive = bagsToDo.split();
       final Place h = home;
       uncountedAsyncAt(p, () -> {
         deal(h, toGive);
       });
     }
     if (lifeline.get()) {
-      final B toGive = bagSplit();
+      final B toGive = bagsToDo.split();
       if (toGive != null) {
         p = place((home.id + 1) % places);
         lifeline.set(false);
@@ -257,12 +181,17 @@ final class LoopGLBProcessor extends PlaceLocalObject
    * @param <F>
    *          the type of the folds to be sent
    */
-  @SuppressWarnings("unchecked")
-  private <F extends Fold<F> & Serializable> void gather() {
-    for (final Fold<?> f : folds.values()) {
-      asyncAt(place(0), () -> synchronizedGiveFold((F) f));
+  private <F extends Result<F> & Serializable> void gather() {
+    final R res = bagsToDo.result();
+    if (res != null) {
+      if (home.id != 0) {
+        asyncAt(place(0), () -> {
+          giveResult(res);
+        });
+      } else {
+        giveResult(res);
+      }
     }
-    folds.clear();
   }
 
   /**
@@ -277,14 +206,8 @@ final class LoopGLBProcessor extends PlaceLocalObject
    * @param q
    *          the work to be given to the place
    */
-  @SuppressWarnings("unchecked")
-  private <B extends Bag<B> & Serializable> void lifelineDeal(B q) {
-    final B d = (B) bagsDone.remove(q.getClass().getName()); // Possibly null
-    if (d != null) {
-      q.merge(d);
-    }
-    q.setWorkCollector(this);
-    bagsToDo.put(q.getClass().getName(), q);
+  private <B extends Bag<B, R> & Serializable> void lifelineDeal(B q) {
+    bagsToDo.giveBag(q);
     run();
   }
 
@@ -372,15 +295,8 @@ final class LoopGLBProcessor extends PlaceLocalObject
     }
     do {
       while (!bagsToDo.isEmpty()) {
-        final String key = bagsToDo.keySet().iterator().next();
-        final Bag<?> bag = bagsToDo.get(key);
 
-        bag.process(WORK_UNIT);
-
-        if (bag.isEmpty()) {
-          bagsToDo.remove(key);
-          bagsDone.put(key, bag);
-        }
+        bagsToDo.process(WORK_UNIT);
         distribute();
       }
 
@@ -454,16 +370,17 @@ final class LoopGLBProcessor extends PlaceLocalObject
   }
 
   /**
-   * Merges the given Fold into this instance folds, ensuring mutual exclusion
+   * Merges the given Result into this instance folds, ensuring mutual exclusion
    *
-   * @param <F>
-   *          type parameter
+   *
    * @param fold
    *          the fold to be merged into this place
    */
-  private <F extends Fold<F> & Serializable> void synchronizedGiveFold(F fold) {
-    synchronized (this) {
-      giveFold(fold);
+  private synchronized void giveResult(R res) {
+    if (result == null) {
+      result = res;
+    } else {
+      result.fold(res);
     }
   }
 
@@ -473,9 +390,8 @@ final class LoopGLBProcessor extends PlaceLocalObject
    * @see apgas.glb.GLBProcessor#addWork(apgas.glb.Bag)
    */
   @Override
-  public <B extends Bag<B> & Serializable> void addBag(B bag) {
-    bag.setWorkCollector(this);
-    bagsToDo.put(bag.getClass().getName(), bag);
+  public <B extends Bag<B, R> & Serializable> void addBag(B bag) {
+    bagsToDo.giveBag(bag);
   }
 
   /** Launches the computation of the given work */
@@ -485,45 +401,6 @@ final class LoopGLBProcessor extends PlaceLocalObject
     finish(() -> {
       run();
     });
-  }
-
-  /*
-   * (non-Javadoc)
-   *
-   * @see apgas.glb.WorkCollector#giveBag(apgas.glb.Bag)
-   */
-  @SuppressWarnings("unchecked")
-  @Override
-  public <B extends Bag<B> & Serializable> void giveBag(B b) {
-    final B done = (B) bagsToDo.remove(b.getClass().getName());
-    if (done != null) {
-      b.merge(done);
-    }
-    final B toDo = (B) bagsDone.remove(b.getClass().getName());
-    if (toDo != null) {
-      b.merge(toDo);
-    }
-    b.setWorkCollector(this);
-    bagsToDo.put(b.getClass().getName(), b);
-  }
-
-  /*
-   * (non-Javadoc)
-   *
-   * @see apgas.glb.WorkCollector#fold(apgas.glb.Fold)
-   */
-  @SuppressWarnings("unchecked")
-  @Override
-  public <F extends Fold<F> & Serializable> void giveFold(F fold) {
-
-    final String key = fold.getClass().getName() + fold.id();
-    final F existing = (F) folds.get(key);
-
-    if (existing != null) {
-      existing.fold(fold);
-    } else {
-      folds.put(key, fold);
-    }
   }
 
   /**
@@ -540,29 +417,26 @@ final class LoopGLBProcessor extends PlaceLocalObject
   }
 
   /**
-   * Gives back the {@link Fold} that were computed during the previous
+   * Gives back the {@link Result} that were computed during the previous
    * computation. Method {@link #compute()} should be called before to ensure
    * the computation is actually performed.
    *
-   * @return a collection containing all the {@link Fold} known to the
+   * @return a collection containing all the {@link Result} known to the
    *         LoopGLBProcessor, every instance being from a different class
    */
   @Override
-  @SuppressWarnings("rawtypes")
-  public Collection<Fold> result() {
+  public R result() {
     if (!foldCompleted) {
 
       finish(() -> {
         for (final Place p : places()) {
           // Folding this instance's folds into that of place 0
-          if (p.id != 0) {
-            asyncAt(p, () -> gather());
-          }
+          asyncAt(p, () -> gather());
         }
       });
       foldCompleted = true;
     }
-    return folds.values();
+    return result;
   }
 
   /**
@@ -577,8 +451,6 @@ final class LoopGLBProcessor extends PlaceLocalObject
   LoopGLBProcessor(int workUnit, int randomStealAttempts) {
     WORK_UNIT = workUnit;
     RANDOM_STEAL_ATTEMPTS = randomStealAttempts;
-    bagsToDo = new HashMap<>();
-    bagsDone = new HashMap<>();
-    folds = new HashMap<>();
+    bagsToDo = new BagQueue<>();
   }
 }

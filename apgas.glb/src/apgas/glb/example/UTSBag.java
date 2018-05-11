@@ -21,7 +21,7 @@ import apgas.glb.WorkCollector;
  * @author Patrick Finnerty
  *
  */
-public class UTSBag implements Serializable, Bag<UTSBag> {
+public class UTSBag implements Serializable, Bag<UTSBag, Sum> {
 
   /**
    * Serial Version UID
@@ -68,9 +68,6 @@ public class UTSBag implements Serializable, Bag<UTSBag> {
   public int size = 0;
 
   private int count = 0;
-
-  /** WorkCollector in charge of computing this UTSBag */
-  private WorkCollector processor = null;
 
   /**
    * Constructor
@@ -298,10 +295,20 @@ public class UTSBag implements Serializable, Bag<UTSBag> {
       }
       workAmount--;
     }
-    if (isEmpty()) {
-      processor.giveFold(new Sum(count));
-      count = 0;
-    }
+
+  }
+
+  /*
+   * (non-Javadoc)
+   *
+   * @see apgas.glb.Bag#submit(apgas.glb.Result)
+   */
+  @Override
+  public Sum submit() {
+
+    final Sum toReturn = new Sum(count);
+    count = 0;
+    return toReturn;
   }
 
   /*
@@ -320,9 +327,8 @@ public class UTSBag implements Serializable, Bag<UTSBag> {
    * @see apgas.glb.Bag#setProcessor(apgas.glb.WorkCollector)
    */
   @Override
-  public void setWorkCollector(WorkCollector p) {
-    processor = p;
-  }
+  public void setWorkCollector(WorkCollector<Sum> p) {
+  } // Nothing to do
 
   public static String sub(String str, int start, int end) {
     return str.substring(start, Math.min(end, str.length()));
@@ -344,7 +350,7 @@ public class UTSBag implements Serializable, Bag<UTSBag> {
 
     final MessageDigest md = encoder();
 
-    final GLBProcessor processor = GLBProcessorFactory.GLBProcessor(500, 1,
+    final GLBProcessor<Sum> processor = GLBProcessorFactory.GLBProcessor(500, 1,
         new HypercubeStrategy());
 
     final UTSBag taskBag = new UTSBag(64);

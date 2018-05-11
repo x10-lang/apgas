@@ -5,7 +5,7 @@ package apgas.glb.example;
 
 import java.io.Serializable;
 
-import apgas.glb.Fold;
+import apgas.glb.Result;
 
 /**
  * Performs the addition on integers.
@@ -13,7 +13,7 @@ import apgas.glb.Fold;
  * @author Patrick Finnerty
  *
  */
-public class Sum implements Fold<Sum>, Serializable {
+public class Sum implements Result<Sum>, Serializable {
 
   /**
    * Serial Version UID
@@ -26,21 +26,11 @@ public class Sum implements Fold<Sum>, Serializable {
   /*
    * (non-Javadoc)
    *
-   * @see apgas.glb.Fold#fold(apgas.glb.Fold)
+   * @see apgas.glb.Result#fold(apgas.glb.Result)
    */
   @Override
   public void fold(Sum f) {
     sum += f.sum;
-  }
-
-  /*
-   * (non-Javadoc)
-   * 
-   * @see apgas.glb.Fold#id()
-   */
-  @Override
-  public String id() {
-    return "";
   }
 
   /**

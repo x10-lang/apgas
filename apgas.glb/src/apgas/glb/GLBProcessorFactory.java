@@ -42,13 +42,13 @@ public class GLBProcessorFactory {
    * @return a new computing instance
    * @see #LoopGLBProcessor(int, int)
    */
-  public static GLBProcessor<?> LoopGLBProcessor() {
+  public static <R extends Result<R> & Serializable> GLBProcessor<R> LoopGLBProcessor() {
     if (System.getProperty(Configuration.APGAS_PLACES) == null) {
       System.setProperty(Configuration.APGAS_PLACES, DEFAULT_PLACE_COUNT);
     }
 
-    @SuppressWarnings("rawtypes")
-    final LoopGLBProcessor<?> glb = PlaceLocalObject.make(places(),
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    final LoopGLBProcessor<R> glb = PlaceLocalObject.make(places(),
         () -> new LoopGLBProcessor(DEFAULT_WORK_UNIT,
             DEFAULT_RANDOM_STEAL_ATTEMPTS));
     return glb;
@@ -73,14 +73,14 @@ public class GLBProcessorFactory {
    *          <em>positive or nil</em>
    * @return a new computing instance
    */
-  public static GLBProcessor<?> LoopGLBProcessor(int workUnit,
-      int stealAttempts) {
+  public static <R extends Result<R> & Serializable> GLBProcessor<R> LoopGLBProcessor(
+      int workUnit, int stealAttempts) {
     if (System.getProperty(Configuration.APGAS_PLACES) == null) {
       System.setProperty(Configuration.APGAS_PLACES, DEFAULT_PLACE_COUNT);
     }
 
-    @SuppressWarnings("rawtypes")
-    final LoopGLBProcessor<?> glb = PlaceLocalObject.make(places(),
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    final LoopGLBProcessor<R> glb = PlaceLocalObject.make(places(),
         () -> new LoopGLBProcessor(workUnit, stealAttempts));
     return glb;
   }

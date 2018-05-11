@@ -8,7 +8,7 @@ import java.io.Serializable;
 /**
  * Lifeline strategy implementing an hypercube graph lifeline among places.
  * <p>
- * A lifeline between two places exists if the edit distance between place's
+ * A lifeline between two places exists if the edit distance between two place's
  * id's written in binary is 1.
  *
  * @author Patrick Finnerty

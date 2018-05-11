@@ -7,6 +7,11 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 /**
+ * {@link ConcurrentBagQueue} is the class used to handle {@link Bag} instances
+ * of the {@link GenericGLBProcessor}. It is pratically identical to
+ * {@link BagQueue}, albeit protected against concurrency accesses susceptible
+ * to occur with {@link GenericGLBProcessor}.
+ *
  * @author Patrick Finnerty
  *
  */

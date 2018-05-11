@@ -7,6 +7,9 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 /**
+ * {@link BagQueue} is the class used to handle the {@link Bag} instances of the
+ * {@link LoopGLBProcessor}.
+ * 
  * @author Patrick Finnerty
  *
  */

@@ -6,18 +6,21 @@ package apgas.glb;
 import java.io.Serializable;
 
 /**
- * Bag presents the required methods for some work to be processed successfully
- * by a {@link WorkCollector}.
+ * Abstraction of work to be processed by a {@link GLBProcessor}.
  * <p>
- * The interface's type parameter of implementing classes should be the classes
- * themselves. Moreover, in order for {@link Bag}s to be accepted by the
- * {@link GLBProcessor}, they will also need to implement the
- * {@link Serializable} interface.
+ * There are two type parameters to the interface, <em>B</em> and <em>R</em>.
+ * The first parameter <em>B</em> should be the implementing class itself. The
+ * second parameter <em>R</em> is the kind of result this {@link Bag} yields and
+ * should be an implementation of inteface {@link Result}
+ * <P>
+ * Moreover, in order for {@link Bag} implementations to be processed
+ * successfully by the {@link GLBProcessor}, they will also need to implement
+ * the {@link Serializable} interface.
  * <p>
- * For instance:
+ * Example:
  *
  * <pre>
- * public class Work implements Bag&lt;Work&gt;, Serializable {
+ * public class MyBag implements Bag&lt;MyBag, MyResult&gt;, Serializable {
  *
  *   private static final long serialVersionUID = 3582168956043482749L;
  *   // implementation ...

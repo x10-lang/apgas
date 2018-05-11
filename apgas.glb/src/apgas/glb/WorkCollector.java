@@ -6,9 +6,14 @@ package apgas.glb;
 import java.io.Serializable;
 
 /**
- * {@link WorkCollector} provides services to the {@link Bag}s it is responsible
- * for, namely it enables {@link Bag}s to give it new {@link Bag}s to compute
- * and new {@link Result} to handle.
+ * Service provider for {@link Bag}. It allows {@link Bag} instances to submit a
+ * new {@link Bag} instance to be processed by the {@link GLBProcessor} as part
+ * of their {@link Bag#process(int)} method.
+ * <p>
+ * {@link WorkCollector} instance are provided to {@link Bag} instances through
+ * their {@link Bag#setWorkCollector(WorkCollector)} method. The implementation
+ * is free to keep the provided instance as a class member to be used later or
+ * not to store the instance if it is not used.
  *
  * @author Patrick Finnerty
  *
@@ -16,8 +21,8 @@ import java.io.Serializable;
 public interface WorkCollector<R extends Result<R>> {
 
   /**
-   * Adds the bag given as parameter to the bags to be processed by the
-   * WorkCollector.
+   * Adds the bag given as parameter to the bags to be processed in the current
+   * computation.
    * <p>
    * If an other instance of the same class as the {@link Bag} given as
    * parameter is already contained by the {@link WorkCollector}, they will be

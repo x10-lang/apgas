@@ -39,6 +39,9 @@ public class GLBProcessorFactory {
    * <p>
    * This yields a LoopGLBProcessor using default configuration.
    *
+   * @param <R>
+   *          Type of the result for the created GLBProcessor
+   *
    * @return a new computing instance
    * @see #LoopGLBProcessor(int, int)
    */
@@ -65,12 +68,15 @@ public class GLBProcessorFactory {
    * lifeline-steal scheme.
    * </ul>
    *
+   * @param <R>
+   *          Type of the result for the created GLBProcessor
    * @param workUnit
    *          work amount processed by a place before dealing with thieves,
    *          <em>strictly positive</em>
    * @param stealAttempts
    *          number of steal attempts performed by a place before halting,
    *          <em>positive or nil</em>
+   *
    * @return a new computing instance
    */
   public static <R extends Result<R> & Serializable> GLBProcessor<R> LoopGLBProcessor(
@@ -91,6 +97,8 @@ public class GLBProcessorFactory {
    *
    * @param <S>
    *          Type of the strategy parameter
+   * @param <R>
+   *          Type of the result for the created GLBProcessor
    * @param workUnit
    *          amount of work to process before distributing work
    * @param stealAttempts

@@ -16,11 +16,10 @@ import apgas.util.PlaceLocalObject;
  * GenericGLBProcessor proposes a simple API to request for work to be computed
  * using the lifeline based global load balancing framework proposed by APGAS.
  * <p>
- * From the user perspective, this is an implementation of {@link GLBProcessor}
+ * From an user perspective, this is an implementation of {@link GLBProcessor}
  * like {@link LoopGLBProcessor}. However, unlike {@link LoopGLBProcessor}, this
  * implementation can handle any kind {@link LifelineStrategy}. The desired
- * {@link LifelineStrategy} to be used is specefied as a constructor's
- * parameter.
+ * {@link LifelineStrategy} to be used has to be specified in the constructor.
  *
  * @author Patrick Finnerty
  *

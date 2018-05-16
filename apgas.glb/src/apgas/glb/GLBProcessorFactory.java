@@ -6,6 +6,7 @@ package apgas.glb;
 import static apgas.Constructs.*;
 
 import java.io.Serializable;
+import java.util.function.Supplier;
 
 import apgas.Configuration;
 import apgas.util.PlaceLocalObject;
@@ -45,15 +46,15 @@ public class GLBProcessorFactory {
    * @return a new computing instance
    * @see #LoopGLBProcessor(int, int)
    */
-  public static <R extends Result<R> & Serializable> GLBProcessor<R> LoopGLBProcessor() {
+  public static <R extends Result<R> & Serializable, S extends Supplier<R> & Serializable> GLBProcessor<R> LoopGLBProcessor(
+      S resultInit) {
     if (System.getProperty(Configuration.APGAS_PLACES) == null) {
       System.setProperty(Configuration.APGAS_PLACES, DEFAULT_PLACE_COUNT);
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
     final LoopGLBProcessor<R> glb = PlaceLocalObject.make(places(),
-        () -> new LoopGLBProcessor(DEFAULT_WORK_UNIT,
-            DEFAULT_RANDOM_STEAL_ATTEMPTS));
+        () -> new LoopGLBProcessor<>(DEFAULT_WORK_UNIT,
+            DEFAULT_RANDOM_STEAL_ATTEMPTS, resultInit));
     return glb;
   }
 
@@ -79,15 +80,14 @@ public class GLBProcessorFactory {
    *
    * @return a new computing instance
    */
-  public static <R extends Result<R> & Serializable> GLBProcessor<R> LoopGLBProcessor(
-      int workUnit, int stealAttempts) {
+  public static <R extends Result<R> & Serializable, S extends Supplier<R> & Serializable> GLBProcessor<R> LoopGLBProcessor(
+      int workUnit, int stealAttempts, S resultInit) {
     if (System.getProperty(Configuration.APGAS_PLACES) == null) {
       System.setProperty(Configuration.APGAS_PLACES, DEFAULT_PLACE_COUNT);
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
     final LoopGLBProcessor<R> glb = PlaceLocalObject.make(places(),
-        () -> new LoopGLBProcessor(workUnit, stealAttempts));
+        () -> new LoopGLBProcessor<>(workUnit, stealAttempts, resultInit));
     return glb;
   }
 
@@ -106,17 +106,19 @@ public class GLBProcessorFactory {
    *          scheme
    * @param strategy
    *          the lifelines strategy to be used in this GLBProcessor instance
+   * @param resultInit
+   *          Supplier of <R> type neutral element. Functional interface.
    * @return a new computing instance
    */
-  public static <S extends LifelineStrategy & Serializable, R extends Result<R> & Serializable> GLBProcessor<R> GLBProcessor(
-      int workUnit, int stealAttempts, S strategy) {
+  public static <S extends LifelineStrategy & Serializable, R extends Result<R> & Serializable, G extends Supplier<R> & Serializable> GLBProcessor<R> GLBProcessor(
+      int workUnit, int stealAttempts, S strategy, G resultInit) {
     if (System.getProperty(Configuration.APGAS_PLACES) == null) {
       System.setProperty(Configuration.APGAS_PLACES, DEFAULT_PLACE_COUNT);
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     final GLBProcessor<R> glb = PlaceLocalObject.make(places(),
-        () -> new GenericGLBProcessor(workUnit, stealAttempts, strategy));
+        () -> new GenericGLBProcessor<>(workUnit, stealAttempts, strategy,
+            resultInit));
     return glb;
   }
 }

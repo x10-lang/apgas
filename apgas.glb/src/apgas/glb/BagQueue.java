@@ -9,7 +9,7 @@ import java.util.Arrays;
 /**
  * {@link BagQueue} is the class used to handle the {@link Bag} instances of the
  * {@link LoopGLBProcessor}.
- * 
+ *
  * @author Patrick Finnerty
  *
  */
@@ -124,26 +124,16 @@ class BagQueue<R extends Result<R> & Serializable> implements WorkCollector<R> {
   }
 
   /**
-   * Yields back the result from the bags contained by this bag queue.
+   * Computes the result from the bags contained by this bag queue.
    *
-   * @return <R> instance, possibly null.
+   * @param res
+   *          result instance in which the results of the bags are to be stored
    */
   @SuppressWarnings("unchecked")
-  public R result() {
-    R res = null;
-    int i = 0;
-    while (res == null && i < last) {
-      res = ((Bag<?, R>) bags[i]).submit();
-      i++;
+  public void result(R res) {
+    for (int i = 0; i < last; i++) {
+      ((Bag<?, R>) bags[i]).submit(res);
     }
-    while (i < last) {
-      final R toFold = ((Bag<?, R>) bags[i]).submit();
-      if (toFold != null) {
-        res.fold(((Bag<?, R>) bags[i]).submit());
-      }
-      i++;
-    }
-    return res;
   }
 
   /**

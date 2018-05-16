@@ -305,8 +305,8 @@ public class UTSBag implements Serializable, Bag<UTSBag, Sum> {
    * @see apgas.glb.Bag#submit(apgas.glb.Result)
    */
   @Override
-  public Sum submit() {
-    return new Sum(count);
+  public void submit(Sum r) {
+    r.sum += count;
   }
 
   /*
@@ -349,7 +349,7 @@ public class UTSBag implements Serializable, Bag<UTSBag, Sum> {
     final MessageDigest md = encoder();
 
     final GLBProcessor<Sum> processor = GLBProcessorFactory.GLBProcessor(500, 1,
-        new HypercubeStrategy());
+        new HypercubeStrategy(), () -> new Sum(0));
 
     final UTSBag taskBag = new UTSBag(64);
     processor.addBag(taskBag);

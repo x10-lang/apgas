@@ -9,6 +9,7 @@ import java.io.Serializable;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 import apgas.Place;
 import apgas.util.PlaceLocalObject;
@@ -40,6 +41,8 @@ final class LoopGLBProcessor<R extends Result<R> & Serializable>
 
   /** Result instance for this local place */
   private R result = null;
+
+  private final Supplier<R> resultSupplier;
 
   /** Brings the APGAS place id to the class {@link LoopGLBProcessor} */
   private final Place home = here();
@@ -175,22 +178,19 @@ final class LoopGLBProcessor<R extends Result<R> & Serializable>
   }
 
   /**
-   * Folds all this instance folds with that of place 0 before clearing them.
-   * Should not be called if this instance is place 0.
-   *
-   * @param <F>
-   *          the type of the folds to be sent
+   * Computes the result from the bags located at this place before sending
+   * those to place 0.
    */
-  private <F extends Result<F> & Serializable> void gather() {
-    final R res = bagsToDo.result();
-    if (res != null) {
-      if (home.id != 0) {
-        asyncAt(place(0), () -> {
-          giveResult(res);
-        });
-      } else {
+  private void gather() {
+    final R res = resultSupplier.get();
+    bagsToDo.result(res);
+
+    if (home.id != 0) {
+      asyncAt(place(0), () -> {
         giveResult(res);
-      }
+      });
+    } else {
+      giveResult(res);
     }
   }
 
@@ -377,11 +377,8 @@ final class LoopGLBProcessor<R extends Result<R> & Serializable>
    *          the fold to be merged into this place
    */
   private synchronized void giveResult(R res) {
-    if (result == null) {
-      result = res;
-    } else {
-      result.fold(res);
-    }
+    result.fold(res);
+
   }
 
   /*
@@ -427,7 +424,7 @@ final class LoopGLBProcessor<R extends Result<R> & Serializable>
   @Override
   public R result() {
     if (!foldCompleted) {
-
+      result = resultSupplier.get();
       finish(() -> {
         for (final Place p : places()) {
           // Folding this instance's folds into that of place 0
@@ -448,9 +445,11 @@ final class LoopGLBProcessor<R extends Result<R> & Serializable>
    *          number of random steals attempts before resaulting to the lifeline
    *          thief scheme
    */
-  LoopGLBProcessor(int workUnit, int randomStealAttempts) {
+  LoopGLBProcessor(int workUnit, int randomStealAttempts,
+      Supplier<R> resultInit) {
     WORK_UNIT = workUnit;
     RANDOM_STEAL_ATTEMPTS = randomStealAttempts;
+    resultSupplier = resultInit;
     bagsToDo = new BagQueue<>();
   }
 }

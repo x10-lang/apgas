@@ -65,9 +65,10 @@ public interface Bag<B extends Bag<B, R>, R extends Result<R>> {
    * Allows the Bag to submit its result into the provided (user defined) data
    * structure.
    *
-   * @return new instance of the user defined {@link Result} data structure
+   * @param r
+   *          the instance in which this bag's result are to be stored
    */
-  public R submit();
+  public void submit(R r);
 
   /**
    * Creates a new instance of Bag which contains tasks shared by this instance

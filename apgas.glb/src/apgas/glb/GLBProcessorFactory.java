@@ -42,7 +42,11 @@ public class GLBProcessorFactory {
    *
    * @param <R>
    *          Type of the result for the created GLBProcessor
-   *
+   * @param <S>
+   *          Type for the Supplier of <R>
+   * @param resultInit
+   *          Supplier of <R> type neutral element. Functional interface
+   *          implementation, should use a lambda expression as parameter.
    * @return a new computing instance
    * @see #LoopGLBProcessor(int, int)
    */
@@ -71,13 +75,17 @@ public class GLBProcessorFactory {
    *
    * @param <R>
    *          Type of the result for the created GLBProcessor
+   * @param <S>
+   *          Type for the Supplier of <R>
    * @param workUnit
    *          work amount processed by a place before dealing with thieves,
    *          <em>strictly positive</em>
    * @param stealAttempts
    *          number of steal attempts performed by a place before halting,
    *          <em>positive or nil</em>
-   *
+   * @param resultInit
+   *          Supplier of <R> type neutral element. Functional interface
+   *          implementation, should use a lambda expression as parameter.
    * @return a new computing instance
    */
   public static <R extends Result<R> & Serializable, S extends Supplier<R> & Serializable> GLBProcessor<R> LoopGLBProcessor(
@@ -97,7 +105,7 @@ public class GLBProcessorFactory {
    *
    * @param <S>
    *          Type of the strategy parameter
-   * @param <R>
+   * @param <G>
    *          Type of the result for the created GLBProcessor
    * @param workUnit
    *          amount of work to process before distributing work
@@ -107,7 +115,8 @@ public class GLBProcessorFactory {
    * @param strategy
    *          the lifelines strategy to be used in this GLBProcessor instance
    * @param resultInit
-   *          Supplier of <R> type neutral element. Functional interface.
+   *          Supplier of <R> type neutral element. Functional interface
+   *          implementation, should use a lambda expression as parameter.
    * @return a new computing instance
    */
   public static <S extends LifelineStrategy & Serializable, R extends Result<R> & Serializable, G extends Supplier<R> & Serializable> GLBProcessor<R> GLBProcessor(

@@ -6,13 +6,15 @@ package apgas.glb;
 import static org.junit.Assert.*;
 
 import java.io.Serializable;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import apgas.glb.example.Sum;
 
 /**
  * Tests that a pipeline of {@link Bag}s is properly executed by the
@@ -65,10 +67,16 @@ public class BagPipelineTest {
    */
   @Parameterized.Parameters
   public static Collection<Object[]> toTest() {
-    return Arrays.asList(
-        new Object[] { GLBProcessorFactory.LoopGLBProcessor(50, 1) },
-        new Object[] {
-            GLBProcessorFactory.GLBProcessor(50, 1, new HypercubeStrategy()) });
+    final Collection<Object[]> toReturn = new ArrayList<>();
+    final GLBProcessor<Sum> a = GLBProcessorFactory.LoopGLBProcessor(500, 1,
+        () -> new Sum(0));
+    final Object[] first = { a };
+    toReturn.add(first);
+    final GLBProcessor<Sum> b = GLBProcessorFactory.GLBProcessor(500, 1,
+        new HypercubeStrategy(), () -> new Sum(0));
+    final Object[] second = { b };
+    toReturn.add(second);
+    return toReturn;
   }
 
   private class FirstBag implements Bag<FirstBag, Sum>, Serializable {
@@ -156,8 +164,8 @@ public class BagPipelineTest {
      * @see apgas.glb.Bag#submit()
      */
     @Override
-    public Sum submit() {
-      return null;
+    public void submit(Sum r) {
+      // no operation
     }
   }
 
@@ -249,31 +257,8 @@ public class BagPipelineTest {
      * @see apgas.glb.Bag#submit()
      */
     @Override
-    public Sum submit() {
-      return new Sum(amount);
-    }
-  }
-
-  private class Sum implements Result<Sum>, Serializable {
-
-    /** Serial Version UID */
-    private static final long serialVersionUID = 1939234687984405861L;
-
-    /** Sum term */
-    int sum;
-
-    /*
-     * (non-Javadoc)
-     *
-     * @see apgas.glb.Result#fold(apgas.glb.Result)
-     */
-    @Override
-    public void fold(Sum f) {
-      sum += f.sum;
-    }
-
-    public Sum(int s) {
-      sum = s;
+    public void submit(Sum s) {
+      s.sum += amount;
     }
   }
 }

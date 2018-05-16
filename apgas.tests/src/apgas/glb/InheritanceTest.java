@@ -6,7 +6,7 @@ package apgas.glb;
 import static org.junit.Assert.*;
 
 import java.io.Serializable;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 
 import org.junit.Before;
@@ -68,10 +68,16 @@ public class InheritanceTest {
    */
   @Parameterized.Parameters
   public static Collection<Object[]> toTest() {
-    return Arrays.asList(
-        new Object[] { GLBProcessorFactory.LoopGLBProcessor(50, 1) },
-        new Object[] {
-            GLBProcessorFactory.GLBProcessor(50, 1, new HypercubeStrategy()) });
+    final Collection<Object[]> toReturn = new ArrayList<>();
+    final GLBProcessor<Sum> a = GLBProcessorFactory.LoopGLBProcessor(500, 1,
+        () -> new Sum(0));
+    final Object[] first = { a };
+    toReturn.add(first);
+    final GLBProcessor<Sum> b = GLBProcessorFactory.GLBProcessor(500, 1,
+        new HypercubeStrategy(), () -> new Sum(0));
+    final Object[] second = { b };
+    toReturn.add(second);
+    return toReturn;
   }
 
   /**
@@ -134,9 +140,10 @@ public class InheritanceTest {
     }
 
     @Override
-    public Sum submit() {
-      return null;
+    public void submit(Sum r) {
+      // no action
     }
+
   }
 
   /**
@@ -225,8 +232,8 @@ public class InheritanceTest {
     }
 
     @Override
-    public Sum submit() {
-      return new Sum(result);
+    public void submit(Sum r) {
+      r.sum += result;
     }
   }
 }

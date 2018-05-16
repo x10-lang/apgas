@@ -94,10 +94,13 @@ public class UTSTest {
   @Parameterized.Parameters
   public static Collection<Object[]> toTest() {
     final Collection<Object[]> toReturn = new ArrayList<>();
-    final Object[] first = { GLBProcessorFactory.LoopGLBProcessor(500, 1) };
+    final GLBProcessor<Sum> a = GLBProcessorFactory.LoopGLBProcessor(500, 1,
+        () -> new Sum(0));
+    final Object[] first = { a };
     toReturn.add(first);
-    final Object[] second = {
-        GLBProcessorFactory.GLBProcessor(500, 1, new HypercubeStrategy()) };
+    final GLBProcessor<Sum> b = GLBProcessorFactory.GLBProcessor(500, 1,
+        new HypercubeStrategy(), () -> new Sum(0));
+    final Object[] second = { b };
     toReturn.add(second);
     return toReturn;
   }

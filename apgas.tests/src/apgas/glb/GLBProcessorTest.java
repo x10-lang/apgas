@@ -6,13 +6,15 @@ package apgas.glb;
 import static org.junit.Assert.*;
 
 import java.io.Serializable;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import apgas.glb.example.Sum;
 
 /**
  * Test class for {@link apgas.glb.LoopGLBProcessor} and
@@ -76,11 +78,13 @@ public class GLBProcessorTest {
     processor.reset();
 
     Sum res = processor.result();
-    assert res == null;
+    assert res != null;
+    assertEquals(0, res.sum);
 
     processor.compute(); // Re-launching empty computation
     res = processor.result();
-    assert res == null;
+    assertEquals(0, res.sum);
+    assert res != null;
   }
 
   /**
@@ -107,38 +111,16 @@ public class GLBProcessorTest {
    */
   @Parameterized.Parameters
   public static Collection<Object[]> toTest() {
-    return Arrays.asList(
-        new Object[] { GLBProcessorFactory.LoopGLBProcessor(50, 1) },
-        new Object[] {
-            GLBProcessorFactory.GLBProcessor(50, 1, new HypercubeStrategy()) });
-  }
-
-  /**
-   * Simple Task class that performs the sum on integers.
-   *
-   * @author Patrick Finnerty
-   *
-   */
-  private class Sum implements Result<Sum>, Serializable {
-    /** Serial Version UID */
-    private static final long serialVersionUID = -3766700434988512611L;
-    /** Message to be displayed by this task */
-    int sum;
-
-    @Override
-    public void fold(Sum s) {
-      sum += s.sum;
-    }
-
-    /**
-     * Constructor
-     *
-     * @param s
-     *          value to be added
-     */
-    public Sum(int s) {
-      sum = s;
-    }
+    final Collection<Object[]> toReturn = new ArrayList<>();
+    final GLBProcessor<Sum> a = GLBProcessorFactory.LoopGLBProcessor(500, 1,
+        () -> new Sum(0));
+    final Object[] first = { a };
+    toReturn.add(first);
+    final GLBProcessor<Sum> b = GLBProcessorFactory.GLBProcessor(500, 1,
+        new HypercubeStrategy(), () -> new Sum(0));
+    final Object[] second = { b };
+    toReturn.add(second);
+    return toReturn;
   }
 
   /**
@@ -219,8 +201,8 @@ public class GLBProcessorTest {
      * @see apgas.glb.Bag#submit()
      */
     @Override
-    public Sum submit() {
-      return new Sum(result);
+    public void submit(Sum r) {
+      r.sum += result;
     }
 
     /*

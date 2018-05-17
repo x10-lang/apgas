@@ -11,7 +11,7 @@ import java.io.Serializable;
  * There are two type parameters to the interface, <em>B</em> and <em>R</em>.
  * The first parameter <em>B</em> should be the implementing class itself. The
  * second parameter <em>R</em> is the kind of result this {@link Bag} yields and
- * should be an implementation of inteface {@link Result}
+ * should be an implementation of inteface {@link Fold}
  * <P>
  * Moreover, in order for {@link Bag} implementations to be processed
  * successfully by the {@link GLBProcessor}, they will also need to implement
@@ -30,7 +30,7 @@ import java.io.Serializable;
  * @author Patrick Finnerty
  *
  */
-public interface Bag<B extends Bag<B, R>, R extends Result<R>> {
+public interface Bag<B extends Bag<B, R>, R extends Fold<R>> {
 
   /**
    * Indicates if the taskBag is empty, that is if all the tasks were performed.

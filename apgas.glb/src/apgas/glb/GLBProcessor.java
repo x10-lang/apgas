@@ -12,7 +12,7 @@ import java.io.Serializable;
  * The work that can be handled by the GLBProcessor is a {@link Bag}. Initial
  * {@link Bag}s for your computation can be added to this instance by calling
  * {@link #addBag(Bag)}. Note that several {@link Bag}s can be given to the
- * GLBProcessor, as long as they all produce the type of {@link Result} handled
+ * GLBProcessor, as long as they all produce the type of {@link Fold} handled
  * by your instance.
  * <p>
  * Computation is launched using the {@link #compute()} method. The result can
@@ -26,7 +26,7 @@ import java.io.Serializable;
  * @author Patrick Finnerty
  *
  */
-public interface GLBProcessor<R extends Result<R> & Serializable> {
+public interface GLBProcessor<R extends Fold<R> & Serializable> {
 
   /**
    * Allows to give some work to be computed by the GLBProcessor.
@@ -48,23 +48,23 @@ public interface GLBProcessor<R extends Result<R> & Serializable> {
    * will then be available by calling the {@link #result()} method.
    * <p>
    * Note that if you add some extra computation without calling
-   * {@link #reset()} beforehand, the existing {@link Bag}s and {@link Result}s
+   * {@link #reset()} beforehand, the existing {@link Bag}s and {@link Fold}s
    * from the previous computation will still be there and might interfere with
    * your next computation.
    */
   public void compute();
 
   /**
-   * Discards all {@link Bag}s and {@link Result}s remaining in the GLBProcessor
+   * Discards all {@link Bag}s and {@link Fold}s remaining in the GLBProcessor
    * to make it clean and ready for some new computation.
    */
   public void reset();
 
   /**
-   * Gives back the {@link Result}s computed by the {@link GLBProcessor} in the
+   * Gives back the {@link Fold}s computed by the {@link GLBProcessor} in the
    * previous computation.
    *
-   * @return instance of the user-defined Result instance
+   * @return instance of the user-defined Fold instance
    */
   public R result();
 }

@@ -15,7 +15,7 @@ import java.util.Arrays;
  * @author Patrick Finnerty
  *
  */
-class ConcurrentBagQueue<R extends Result<R> & Serializable>
+class ConcurrentBagQueue<R extends Fold<R> & Serializable>
     implements WorkCollector<R> {
 
   /** Index of the last Bag that actually had some work in it */

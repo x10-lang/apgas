@@ -13,7 +13,7 @@ import java.util.Arrays;
  * @author Patrick Finnerty
  *
  */
-class BagQueue<R extends Result<R> & Serializable> implements WorkCollector<R> {
+class BagQueue<R extends Fold<R> & Serializable> implements WorkCollector<R> {
 
   /** Index of the last Bag that actually had some work in it */
   private int lastPlaceWithWork = 0;

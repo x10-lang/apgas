@@ -124,7 +124,7 @@ public class GLBProcessorTest {
   }
 
   /**
-   * {@link Bag} used to spawn a pre-determined number of Sum {@link Result}s
+   * {@link Bag} used to spawn a pre-determined number of Sum {@link Fold}s
    *
    * @author Patrick Finnerty
    *

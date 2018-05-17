@@ -25,7 +25,7 @@ import apgas.util.PlaceLocalObject;
  * @author Patrick Finnerty
  *
  */
-final class GenericGLBProcessor<R extends Result<R> & Serializable>
+final class GenericGLBProcessor<R extends Fold<R> & Serializable>
     extends PlaceLocalObject implements GLBProcessor<R> {
 
   /** Collection of tasks bags to be processed */
@@ -44,7 +44,7 @@ final class GenericGLBProcessor<R extends Result<R> & Serializable>
   private R result;
 
   /**
-   * Initialisation method for the Result instance in which all the bags are
+   * Initialisation method for the Fold instance in which all the bags are
    * goind to store their result
    */
   private final Supplier<R> resultSupplier;
@@ -394,7 +394,7 @@ final class GenericGLBProcessor<R extends Result<R> & Serializable>
   }
 
   /**
-   * Merges the given Result into this instance folds, ensuring mutual exclusion
+   * Merges the given Fold into this instance folds, ensuring mutual exclusion
    *
    * @param <F>
    *          type parameter
@@ -442,11 +442,11 @@ final class GenericGLBProcessor<R extends Result<R> & Serializable>
   }
 
   /**
-   * Gives back the {@link Result} that were computed during the previous
+   * Gives back the {@link Fold} that were computed during the previous
    * computation. Method {@link #compute()} should be called before to ensure
    * the computation is actually performed.
    *
-   * @return a collection containing all the {@link Result} known to the
+   * @return a collection containing all the {@link Fold} known to the
    *         LoopGLBProcessor, every instance being from a different class
    */
   @Override

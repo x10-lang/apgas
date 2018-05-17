@@ -27,7 +27,7 @@ import apgas.util.PlaceLocalObject;
  * @author Patrick Finnerty
  *
  */
-final class LoopGLBProcessor<R extends Result<R> & Serializable>
+final class LoopGLBProcessor<R extends Fold<R> & Serializable>
     extends PlaceLocalObject implements GLBProcessor<R> {
 
   /** Collection of tasks bags to be processed */
@@ -39,7 +39,7 @@ final class LoopGLBProcessor<R extends Result<R> & Serializable>
    */
   private boolean foldCompleted = false;
 
-  /** Result instance for this local place */
+  /** Fold instance for this local place */
   private R result = null;
 
   private final Supplier<R> resultSupplier;
@@ -370,7 +370,7 @@ final class LoopGLBProcessor<R extends Result<R> & Serializable>
   }
 
   /**
-   * Merges the given Result into this instance folds, ensuring mutual exclusion
+   * Merges the given Fold into this instance folds, ensuring mutual exclusion
    *
    *
    * @param fold
@@ -414,11 +414,11 @@ final class LoopGLBProcessor<R extends Result<R> & Serializable>
   }
 
   /**
-   * Gives back the {@link Result} that were computed during the previous
+   * Gives back the {@link Fold} that were computed during the previous
    * computation. Method {@link #compute()} should be called before to ensure
    * the computation is actually performed.
    *
-   * @return a collection containing all the {@link Result} known to the
+   * @return a collection containing all the {@link Fold} known to the
    *         LoopGLBProcessor, every instance being from a different class
    */
   @Override

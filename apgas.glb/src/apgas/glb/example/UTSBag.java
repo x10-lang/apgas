@@ -302,7 +302,7 @@ public class UTSBag implements Serializable, Bag<UTSBag, Sum> {
   /*
    * (non-Javadoc)
    *
-   * @see apgas.glb.Bag#submit(apgas.glb.Result)
+   * @see apgas.glb.Bag#submit(apgas.glb.Fold)
    */
   @Override
   public void submit(Sum r) {

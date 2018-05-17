@@ -18,7 +18,7 @@ import java.io.Serializable;
  * @author Patrick Finnerty
  *
  */
-public interface WorkCollector<R extends Result<R>> {
+public interface WorkCollector<R extends Fold<R>> {
 
   /**
    * Adds the bag given as parameter to the bags to be processed in the current

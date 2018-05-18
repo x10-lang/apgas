@@ -352,8 +352,8 @@ public class UTSBag implements Serializable, Bag<UTSBag, Sum> {
         new HypercubeStrategy(), () -> new Sum(0));
 
     final UTSBag taskBag = new UTSBag(64);
-    processor.addBag(taskBag);
     taskBag.seed(md, 19, depth - 2);
+    processor.addBag(taskBag);
 
     System.out.println("Warmup...");
 
@@ -361,8 +361,8 @@ public class UTSBag implements Serializable, Bag<UTSBag, Sum> {
 
     processor.reset();
     final UTSBag secondBag = new UTSBag(64);
-    processor.addBag(secondBag);
     secondBag.seed(md, 19, depth);
+    processor.addBag(secondBag);
 
     System.out.println("Starting...");
     final long start = System.nanoTime();

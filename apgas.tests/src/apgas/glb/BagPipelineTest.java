@@ -26,7 +26,7 @@ import apgas.glb.example.Sum;
 public class BagPipelineTest {
 
   /** Instance in testing */
-  private final GLBProcessor<Sum> processor;
+  private final GLBProcessor processor;
 
   /**
    * Tests a simple to tasks pipeline.
@@ -46,7 +46,7 @@ public class BagPipelineTest {
    * @param p
    *          the GLBProcessor instance to be tested
    */
-  public BagPipelineTest(GLBProcessor<Sum> p) {
+  public BagPipelineTest(GLBProcessor p) {
     processor = p;
   }
 
@@ -58,10 +58,10 @@ public class BagPipelineTest {
   @Parameterized.Parameters
   public static Collection<Object[]> toTest() {
     final Collection<Object[]> toReturn = new ArrayList<>();
-    final GLBProcessor<Sum> a = GLBProcessorFactory.LoopGLBProcessor(500, 1);
+    final GLBProcessor a = GLBProcessorFactory.LoopGLBProcessor(500, 1);
     final Object[] first = { a };
     toReturn.add(first);
-    final GLBProcessor<Sum> b = GLBProcessorFactory.GLBProcessor(500, 1,
+    final GLBProcessor b = GLBProcessorFactory.GLBProcessor(500, 1,
         new HypercubeStrategy());
     final Object[] second = { b };
     toReturn.add(second);

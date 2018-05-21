@@ -29,7 +29,7 @@ public class GLBProcessorTest {
   /**
    * LoopGLBProcessor instance used for the tests.
    */
-  private GLBProcessor<Sum> processor = null;
+  private GLBProcessor processor = null;
 
   /**
    * Creates a new processor instance to be used during the tests
@@ -37,7 +37,7 @@ public class GLBProcessorTest {
    * @param computer
    *          GLBProcessor instance to be tested
    */
-  public GLBProcessorTest(GLBProcessor<Sum> computer) {
+  public GLBProcessorTest(GLBProcessor computer) {
     processor = computer;
   }
 
@@ -80,10 +80,10 @@ public class GLBProcessorTest {
   @Parameterized.Parameters
   public static Collection<Object[]> toTest() {
     final Collection<Object[]> toReturn = new ArrayList<>();
-    final GLBProcessor<Sum> a = GLBProcessorFactory.LoopGLBProcessor(500, 1);
+    final GLBProcessor a = GLBProcessorFactory.LoopGLBProcessor(500, 1);
     final Object[] first = { a };
     toReturn.add(first);
-    final GLBProcessor<Sum> b = GLBProcessorFactory.GLBProcessor(500, 1,
+    final GLBProcessor b = GLBProcessorFactory.GLBProcessor(500, 1,
         new HypercubeStrategy());
     final Object[] second = { b };
     toReturn.add(second);

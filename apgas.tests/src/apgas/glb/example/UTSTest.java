@@ -38,7 +38,7 @@ public class UTSTest {
   static final int EXPECTED_NODES = 264459392;
 
   /** LoopGLBProcessor used to perform the computation */
-  static GLBProcessor<Sum> processor;
+  static GLBProcessor processor;
 
   /** Message dialect used by UTS computation to generate the tree */
   static MessageDigest MD;
@@ -49,7 +49,7 @@ public class UTSTest {
    * @param p
    *          GLBProcessor to be tested
    */
-  public UTSTest(GLBProcessor<Sum> p) {
+  public UTSTest(GLBProcessor p) {
     processor = p;
     MD = UTSBag.encoder();
 
@@ -83,10 +83,10 @@ public class UTSTest {
   @Parameterized.Parameters
   public static Collection<Object[]> toTest() {
     final Collection<Object[]> toReturn = new ArrayList<>();
-    final GLBProcessor<Sum> a = GLBProcessorFactory.LoopGLBProcessor(500, 1);
+    final GLBProcessor a = GLBProcessorFactory.LoopGLBProcessor(500, 1);
     final Object[] first = { a };
     toReturn.add(first);
-    final GLBProcessor<Sum> b = GLBProcessorFactory.GLBProcessor(500, 1,
+    final GLBProcessor b = GLBProcessorFactory.GLBProcessor(500, 1,
         new HypercubeStrategy());
     final Object[] second = { b };
     toReturn.add(second);

@@ -21,14 +21,14 @@ public class MultipleGLBProcessorTest {
    */
   @Test
   public void multipleGLBProcessorTest() {
-    final GLBProcessor<Sum> a = GLBProcessorFactory.LoopGLBProcessor(100, 1);
+    final GLBProcessor a = GLBProcessorFactory.LoopGLBProcessor(100, 1);
 
     final UTSBag uts = new UTSBag(64);
     uts.seed(UTSBag.encoder(), 13, 13);
 
     final long RESULT = a.compute(uts, () -> new Sum(0)).sum;
 
-    final GLBProcessor<Sum> b = GLBProcessorFactory.GLBProcessor(100, 1,
+    final GLBProcessor b = GLBProcessorFactory.GLBProcessor(100, 1,
         new HypercubeStrategy());
 
     final UTSBag otherUts = new UTSBag(64);

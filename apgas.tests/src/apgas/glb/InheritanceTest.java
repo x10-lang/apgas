@@ -23,7 +23,7 @@ import apgas.glb.example.Sum;
 public class InheritanceTest {
 
   /** Computation ressource used for the test */
-  GLBProcessor<Sum> processor;
+  GLBProcessor processor;
 
   /**
    * Constructor
@@ -31,7 +31,7 @@ public class InheritanceTest {
    * @param p
    *          instance to be tested
    */
-  public InheritanceTest(GLBProcessor<Sum> p) {
+  public InheritanceTest(GLBProcessor p) {
 
     processor = p;
   }
@@ -59,10 +59,10 @@ public class InheritanceTest {
   @Parameterized.Parameters
   public static Collection<Object[]> toTest() {
     final Collection<Object[]> toReturn = new ArrayList<>();
-    final GLBProcessor<Sum> a = GLBProcessorFactory.LoopGLBProcessor(500, 1);
+    final GLBProcessor a = GLBProcessorFactory.LoopGLBProcessor(500, 1);
     final Object[] first = { a };
     toReturn.add(first);
-    final GLBProcessor<Sum> b = GLBProcessorFactory.GLBProcessor(500, 1,
+    final GLBProcessor b = GLBProcessorFactory.GLBProcessor(500, 1,
         new HypercubeStrategy());
     final Object[] second = { b };
     toReturn.add(second);

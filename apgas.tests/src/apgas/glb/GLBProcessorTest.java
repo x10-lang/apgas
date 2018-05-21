@@ -13,7 +13,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import apgas.Constructs;
 import apgas.glb.example.Sum;
+import apgas.glb.example.UTSBag;
 
 /**
  * Test class for {@link apgas.glb.LoopGLBProcessor} and
@@ -25,6 +27,10 @@ import apgas.glb.example.Sum;
  */
 @RunWith(Parameterized.class)
 public class GLBProcessorTest {
+
+  private static final int UTS_SEED = 19;
+  private static final int UTS_DEPTH = 13;
+  private static final long UTS_EXPECTED_NODES = 264459392;
 
   /**
    * LoopGLBProcessor instance used for the tests.
@@ -70,6 +76,53 @@ public class GLBProcessorTest {
   @Test(timeout = 5000)
   public void sumTest500() {
     sum(500);
+  }
+
+  /**
+   * Tests that several computations submitted to the same instance
+   * synchronously are handled correctly.
+   */
+  @Test(timeout = 30000)
+  public void testSeveralComputations() {
+    final SpawnSum firstComputation = new SpawnSum(500);
+    final UTSBag secondComputation = new UTSBag(64);
+    secondComputation.seed(UTSBag.encoder(), UTS_SEED, UTS_DEPTH);
+
+    final Sum first = new Sum(0);
+    final Sum second = new Sum(0);
+
+    Constructs.finish(() -> {
+      Constructs.async(() -> {
+        first.fold(processor.compute(firstComputation, () -> new Sum(0)));
+        second.fold(processor.compute(secondComputation, () -> new Sum(0)));
+      });
+    });
+
+    assertEquals(500, first.sum);
+    assertEquals(UTS_EXPECTED_NODES, second.sum);
+  }
+
+  /**
+   * Tests that bags having the same result type have their result effectively
+   * merged together.
+   *
+   * @param <B>
+   *          type parameter used to pass parameters to the GLBPRocessor
+   */
+  @SuppressWarnings("unchecked")
+  @Test(timeout = 30000)
+  public <B extends Bag<B, Sum> & Serializable> void testMultipleInitialBags() {
+    final SpawnSum firstComputation = new SpawnSum(500);
+    final UTSBag secondComputation = new UTSBag(64);
+    secondComputation.seed(UTSBag.encoder(), UTS_SEED, UTS_DEPTH);
+
+    final Collection<B> initialBags = new ArrayList<>();
+    initialBags.add((B) firstComputation);
+    initialBags.add((B) secondComputation);
+
+    final Sum s = processor.compute(initialBags, () -> new Sum(0));
+
+    assertEquals(UTS_EXPECTED_NODES + 500, s.sum);
   }
 
   /**
@@ -128,8 +181,12 @@ public class GLBProcessorTest {
     @Override
     public SpawnSum split() {
       final int half = toSpawn / 2;
-      toSpawn -= half;
-      return new SpawnSum(half);
+      if (half > 0) {
+        toSpawn -= half;
+        return new SpawnSum(half);
+      } else {
+        return null;
+      }
     }
 
     /*
@@ -181,4 +238,5 @@ public class GLBProcessorTest {
     public void setWorkCollector(WorkCollector<Sum> p) { // Not used
     }
   }
+
 }

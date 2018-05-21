@@ -6,6 +6,7 @@ package apgas.glb;
 import static apgas.Constructs.*;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -33,16 +34,10 @@ final class LoopGLBProcessor<R extends Fold<R> & Serializable>
   /** Collection of tasks bags to be processed */
   private final BagQueue<R> bagsToDo;
 
-  /**
-   * Indicates if the {@link #folds} member is the folded result of all the
-   * places or not. Only useful for place 0.
-   */
-  private boolean foldCompleted = false;
-
   /** Fold instance for this local place */
   private R result = null;
 
-  private final Supplier<R> resultSupplier;
+  private Supplier<R> resultSupplier;
 
   /** Brings the APGAS place id to the class {@link LoopGLBProcessor} */
   private final Place home = here();
@@ -101,12 +96,13 @@ final class LoopGLBProcessor<R extends Fold<R> & Serializable>
   /**
    * Puts this local place to a ready to compute state.
    */
-  private void clear() {
+  private void clear(Supplier<R> initializer) {
     thieves.clear();
     lifeline.set(home.id != 3);
     state = -2;
     bagsToDo.clear();
     result = null;
+    resultSupplier = initializer;
   }
 
   /**
@@ -381,34 +377,46 @@ final class LoopGLBProcessor<R extends Fold<R> & Serializable>
 
   }
 
-  /*
-   * (non-Javadoc)
-   *
-   * @see apgas.glb.GLBProcessor#addWork(apgas.glb.Bag)
-   */
-  @Override
-  public <B extends Bag<B, R> & Serializable> void addBag(B bag) {
-    bagsToDo.giveBag(bag);
-  }
-
   /** Launches the computation of the given work */
   @Override
-  public void compute() {
-    foldCompleted = false;
+  public <B extends Bag<B, R> & Serializable, S extends Supplier<R> & Serializable> R compute(
+      B bag, S initializer) {
+    reset(initializer);
+    bagsToDo.giveBag(bag);
     finish(() -> {
       run();
     });
+    return result();
+  }
+
+  /*
+   * (non-Javadoc)
+   *
+   * @see apgas.glb.GLBProcessor#compute(apgas.glb.Bag,
+   * java.util.function.Supplier)
+   */
+  @Override
+  public <B extends Bag<B, R> & Serializable, S extends Supplier<R> & Serializable> R compute(
+      Collection<B> bags, S initializer) {
+    reset(initializer);
+    for (final B bag : bags) {
+      bagsToDo.giveBag(bag);
+    }
+
+    finish(() -> {
+      run();
+    });
+    return result();
   }
 
   /**
    * Clears the {@link LoopGLBProcessor} of all its tasks and results and
    * prepares it for a new computation.
    */
-  @Override
-  public void reset() {
+  private <S extends Supplier<R> & Serializable> void reset(S initializer) {
     finish(() -> {
       for (final Place p : places()) {
-        asyncAt(p, () -> clear());
+        asyncAt(p, () -> clear(initializer));
       }
     });
   }
@@ -421,18 +429,14 @@ final class LoopGLBProcessor<R extends Fold<R> & Serializable>
    * @return a collection containing all the {@link Fold} known to the
    *         LoopGLBProcessor, every instance being from a different class
    */
-  @Override
-  public R result() {
-    if (!foldCompleted) {
-      result = resultSupplier.get();
-      finish(() -> {
-        for (final Place p : places()) {
-          // Folding this instance's folds into that of place 0
-          asyncAt(p, () -> gather());
-        }
-      });
-      foldCompleted = true;
-    }
+  private R result() {
+    result = resultSupplier.get();
+    finish(() -> {
+      for (final Place p : places()) {
+        // Folding this instance's folds into that of place 0
+        asyncAt(p, () -> gather());
+      }
+    });
     return result;
   }
 
@@ -445,11 +449,9 @@ final class LoopGLBProcessor<R extends Fold<R> & Serializable>
    *          number of random steals attempts before resaulting to the lifeline
    *          thief scheme
    */
-  LoopGLBProcessor(int workUnit, int randomStealAttempts,
-      Supplier<R> resultInit) {
+  LoopGLBProcessor(int workUnit, int randomStealAttempts) {
     WORK_UNIT = workUnit;
     RANDOM_STEAL_ATTEMPTS = randomStealAttempts;
-    resultSupplier = resultInit;
     bagsToDo = new BagQueue<>();
   }
 }

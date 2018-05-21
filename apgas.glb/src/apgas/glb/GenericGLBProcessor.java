@@ -32,22 +32,16 @@ final class GenericGLBProcessor<R extends Fold<R> & Serializable>
   private final ConcurrentBagQueue<R> bagsToDo;
 
   /**
-   * Indicates if the {@link #folds} member is the folded result of all the
-   * places or not. Only useful for place 0.
-   */
-  private boolean foldCompleted = false;
-
-  /**
    * R instance local to this place, contains the result gathered from the
    * {@link Bag}s completed at this local place.
    */
   private R result;
 
   /**
-   * Initialisation method for the Fold instance in which all the bags are
-   * goind to store their result
+   * Initialisation method for the Fold instance in which all the bags are goind
+   * to store their result
    */
-  private final Supplier<R> resultSupplier;
+  private Supplier<R> resultSupplier;
 
   /** Brings the APGAS place id to the class {@link LoopGLBProcessor} */
   private final Place home = here();
@@ -104,7 +98,7 @@ final class GenericGLBProcessor<R extends Fold<R> & Serializable>
   /**
    * Puts this local place into a ready to compute state.
    */
-  private void clear() {
+  private void clear(Supplier<R> initializer) {
     thieves.clear();
     lifelineThieves.clear();
     for (final int i : incomingLifelines) {
@@ -115,6 +109,7 @@ final class GenericGLBProcessor<R extends Fold<R> & Serializable>
     state = -2;
     bagsToDo.clear();
     result = null;
+    resultSupplier = initializer;
   }
 
   /**
@@ -408,35 +403,27 @@ final class GenericGLBProcessor<R extends Fold<R> & Serializable>
   /*
    * (non-Javadoc)
    *
-   * @see apgas.glb.GLBProcessor#addWork(apgas.glb.Bag)
-   */
-  @Override
-  public <B extends Bag<B, R> & Serializable> void addBag(B bag) {
-    bagsToDo.giveBag(bag);
-  }
-
-  /*
-   * (non-Javadoc)
-   *
    * @see apgas.glb.GLBProcessor#compute()
    */
   @Override
-  public void compute() {
-    foldCompleted = false;
+  public <B extends Bag<B, R> & Serializable, S extends Supplier<R> & Serializable> R compute(
+      B bag, S initializer) {
+    reset(initializer);
+    bagsToDo.giveBag(bag);
     finish(() -> {
       run();
     });
+    return result();
   }
 
   /**
    * Clears the {@link LoopGLBProcessor} of all its tasks and results and
    * prepares it for a new computation.
    */
-  @Override
-  public void reset() {
+  public <S extends Supplier<R> & Serializable> void reset(S initializer) {
     finish(() -> {
       for (final Place p : places()) {
-        asyncAt(p, () -> clear());
+        asyncAt(p, () -> clear(initializer));
       }
     });
   }
@@ -449,18 +436,15 @@ final class GenericGLBProcessor<R extends Fold<R> & Serializable>
    * @return a collection containing all the {@link Fold} known to the
    *         LoopGLBProcessor, every instance being from a different class
    */
-  @Override
-  public R result() {
-    if (!foldCompleted) {
-      result = resultSupplier.get();
-      finish(() -> {
-        for (final Place p : places()) {
-          asyncAt(p, () -> gather());
-        }
-      });
-      foldCompleted = true;
-    }
+  private R result() {
+    result = resultSupplier.get();
+    finish(() -> {
+      for (final Place p : places()) {
+        asyncAt(p, () -> gather());
+      }
+    });
     return result;
+
   }
 
   /**
@@ -474,11 +458,10 @@ final class GenericGLBProcessor<R extends Fold<R> & Serializable>
    * @param s
    *          {@link LifelineStrategy} to be followed
    */
-  GenericGLBProcessor(int workUnit, int randomStealAttempts, LifelineStrategy s,
-      Supplier<R> resultInit) {
+  GenericGLBProcessor(int workUnit, int randomStealAttempts,
+      LifelineStrategy s) {
     WORK_UNIT = workUnit;
     RANDOM_STEAL_ATTEMPTS = randomStealAttempts;
-    resultSupplier = resultInit;
 
     bagsToDo = new ConcurrentBagQueue<>();
 

@@ -349,38 +349,30 @@ public class UTSBag implements Serializable, Bag<UTSBag, Sum> {
     final MessageDigest md = encoder();
 
     final GLBProcessor<Sum> processor = GLBProcessorFactory.GLBProcessor(500, 1,
-        new HypercubeStrategy(), () -> new Sum(0));
+        new HypercubeStrategy());
 
     final UTSBag taskBag = new UTSBag(64);
     taskBag.seed(md, 19, depth - 2);
-    processor.addBag(taskBag);
 
     System.out.println("Warmup...");
 
-    processor.compute();
+    processor.compute(taskBag, () -> new Sum(0));
 
-    processor.reset();
     final UTSBag secondBag = new UTSBag(64);
     secondBag.seed(md, 19, depth);
-    processor.addBag(secondBag);
 
     System.out.println("Starting...");
     final long start = System.nanoTime();
-    processor.compute();
+    final long count = processor.compute(secondBag, () -> new Sum(0)).sum;
 
-    final long computationEnd = System.nanoTime();
     System.out.println("Finished.");
 
-    final long count = processor.result().sum;
-    final long gatherEnd = System.nanoTime();
+    final long finish = System.nanoTime();
 
-    final long computationTime = computationEnd - start;
-    final long gatherTime = gatherEnd - computationEnd;
+    final long computationTime = finish - start;
 
     System.out.println("Depth: " + depth + ", Performance: " + count + "/"
         + sub("" + computationTime / 1e9, 0, 6) + " = "
         + sub("" + (count / (computationTime / 1e3)), 0, 6) + "M nodes/s");
-    System.out.println("Gather time: " + sub("" + gatherTime / 1e9, 0, 6));
-
   }
 }

@@ -6,7 +6,6 @@ package apgas.glb;
 import static apgas.Constructs.*;
 
 import java.io.Serializable;
-import java.util.function.Supplier;
 
 import apgas.Configuration;
 import apgas.util.PlaceLocalObject;
@@ -50,15 +49,14 @@ public class GLBProcessorFactory {
    * @return a new computing instance
    * @see #LoopGLBProcessor(int, int)
    */
-  public static <R extends Fold<R> & Serializable, S extends Supplier<R> & Serializable> GLBProcessor<R> LoopGLBProcessor(
-      S resultInit) {
+  public static <R extends Fold<R> & Serializable> GLBProcessor<R> LoopGLBProcessor() {
     if (System.getProperty(Configuration.APGAS_PLACES) == null) {
       System.setProperty(Configuration.APGAS_PLACES, DEFAULT_PLACE_COUNT);
     }
 
     final LoopGLBProcessor<R> glb = PlaceLocalObject.make(places(),
         () -> new LoopGLBProcessor<>(DEFAULT_WORK_UNIT,
-            DEFAULT_RANDOM_STEAL_ATTEMPTS, resultInit));
+            DEFAULT_RANDOM_STEAL_ATTEMPTS));
     return glb;
   }
 
@@ -88,14 +86,14 @@ public class GLBProcessorFactory {
    *          implementation, should use a lambda expression as parameter.
    * @return a new computing instance
    */
-  public static <R extends Fold<R> & Serializable, S extends Supplier<R> & Serializable> GLBProcessor<R> LoopGLBProcessor(
-      int workUnit, int stealAttempts, S resultInit) {
+  public static <R extends Fold<R> & Serializable> GLBProcessor<R> LoopGLBProcessor(
+      int workUnit, int stealAttempts) {
     if (System.getProperty(Configuration.APGAS_PLACES) == null) {
       System.setProperty(Configuration.APGAS_PLACES, DEFAULT_PLACE_COUNT);
     }
 
     final LoopGLBProcessor<R> glb = PlaceLocalObject.make(places(),
-        () -> new LoopGLBProcessor<>(workUnit, stealAttempts, resultInit));
+        () -> new LoopGLBProcessor<>(workUnit, stealAttempts));
     return glb;
   }
 
@@ -119,15 +117,14 @@ public class GLBProcessorFactory {
    *          implementation, should use a lambda expression as parameter.
    * @return a new computing instance
    */
-  public static <S extends LifelineStrategy & Serializable, R extends Fold<R> & Serializable, G extends Supplier<R> & Serializable> GLBProcessor<R> GLBProcessor(
-      int workUnit, int stealAttempts, S strategy, G resultInit) {
+  public static <S extends LifelineStrategy & Serializable, R extends Fold<R> & Serializable> GLBProcessor<R> GLBProcessor(
+      int workUnit, int stealAttempts, S strategy) {
     if (System.getProperty(Configuration.APGAS_PLACES) == null) {
       System.setProperty(Configuration.APGAS_PLACES, DEFAULT_PLACE_COUNT);
     }
 
     final GLBProcessor<R> glb = PlaceLocalObject.make(places(),
-        () -> new GenericGLBProcessor<>(workUnit, stealAttempts, strategy,
-            resultInit));
+        () -> new GenericGLBProcessor<>(workUnit, stealAttempts, strategy));
     return glb;
   }
 }

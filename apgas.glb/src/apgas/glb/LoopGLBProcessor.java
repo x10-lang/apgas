@@ -381,12 +381,15 @@ final class LoopGLBProcessor<R extends Fold<R> & Serializable>
   @Override
   public <B extends Bag<B, R> & Serializable, S extends Supplier<R> & Serializable> R compute(
       B bag, S initializer) {
-    reset(initializer);
-    bagsToDo.giveBag(bag);
-    finish(() -> {
-      run();
-    });
-    return result();
+    synchronized (bagsToDo) {
+
+      reset(initializer);
+      bagsToDo.giveBag(bag);
+      finish(() -> {
+        run();
+      });
+      return result();
+    }
   }
 
   /*
@@ -398,15 +401,18 @@ final class LoopGLBProcessor<R extends Fold<R> & Serializable>
   @Override
   public <B extends Bag<B, R> & Serializable, S extends Supplier<R> & Serializable> R compute(
       Collection<B> bags, S initializer) {
-    reset(initializer);
-    for (final B bag : bags) {
-      bagsToDo.giveBag(bag);
-    }
+    synchronized (bagsToDo) {
 
-    finish(() -> {
-      run();
-    });
-    return result();
+      reset(initializer);
+      for (final B bag : bags) {
+        bagsToDo.giveBag(bag);
+      }
+
+      finish(() -> {
+        run();
+      });
+      return result();
+    }
   }
 
   /**

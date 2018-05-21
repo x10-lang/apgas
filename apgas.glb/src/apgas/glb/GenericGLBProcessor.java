@@ -6,6 +6,7 @@ package apgas.glb;
 import static apgas.Constructs.*;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Supplier;
@@ -403,17 +404,43 @@ final class GenericGLBProcessor<R extends Fold<R> & Serializable>
   /*
    * (non-Javadoc)
    *
-   * @see apgas.glb.GLBProcessor#compute()
+   * @see apgas.glb.GLBProcessor#compute(apgas.glb.Bag,
+   * java.util.function.Supplier)
    */
   @Override
   public <B extends Bag<B, R> & Serializable, S extends Supplier<R> & Serializable> R compute(
       B bag, S initializer) {
-    reset(initializer);
-    bagsToDo.giveBag(bag);
-    finish(() -> {
-      run();
-    });
-    return result();
+    synchronized (bagsToDo) {
+      reset(initializer);
+      bagsToDo.giveBag(bag);
+      finish(() -> {
+        run();
+      });
+      return result();
+    }
+  }
+
+  /*
+   * (non-Javadoc)
+   *
+   * @see apgas.glb.GLBProcessor#compute(apgas.glb.Bag,
+   * java.util.function.Supplier)
+   */
+  @Override
+  public <B extends Bag<B, R> & Serializable, S extends Supplier<R> & Serializable> R compute(
+      Collection<B> bags, S initializer) {
+    synchronized (bagsToDo) {
+
+      reset(initializer);
+      for (final B bag : bags) {
+        bagsToDo.giveBag(bag);
+      }
+
+      finish(() -> {
+        run();
+      });
+      return result();
+    }
   }
 
   /**

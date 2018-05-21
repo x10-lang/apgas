@@ -26,23 +26,26 @@ import apgas.util.PlaceLocalObject;
  * @author Patrick Finnerty
  *
  */
-final class GenericGLBProcessor<R extends Fold<R> & Serializable>
-    extends PlaceLocalObject implements GLBProcessor<R> {
+final class GenericGLBProcessor extends PlaceLocalObject
+    implements GLBProcessor {
 
   /** Collection of tasks bags to be processed */
-  private final ConcurrentBagQueue<R> bagsToDo;
+  @SuppressWarnings("rawtypes")
+  private ConcurrentBagQueue bagsToDo;
 
   /**
    * R instance local to this place, contains the result gathered from the
    * {@link Bag}s completed at this local place.
    */
-  private R result;
+  @SuppressWarnings("rawtypes")
+  private Fold result;
 
   /**
    * Initialisation method for the Fold instance in which all the bags are goind
    * to store their result
    */
-  private Supplier<R> resultSupplier;
+  @SuppressWarnings("rawtypes")
+  private Supplier<Fold> resultSupplier;
 
   /** Brings the APGAS place id to the class {@link LoopGLBProcessor} */
   private final Place home = here();
@@ -99,7 +102,9 @@ final class GenericGLBProcessor<R extends Fold<R> & Serializable>
   /**
    * Puts this local place into a ready to compute state.
    */
-  private void clear(Supplier<R> initializer) {
+  @SuppressWarnings({ "unchecked", "rawtypes" })
+  private <R extends Fold<R> & Serializable> void clear(
+      Supplier<R> initializer) {
     thieves.clear();
     lifelineThieves.clear();
     for (final int i : incomingLifelines) {
@@ -108,9 +113,9 @@ final class GenericGLBProcessor<R extends Fold<R> & Serializable>
       }
     }
     state = -2;
-    bagsToDo.clear();
+    bagsToDo = new ConcurrentBagQueue<R>();
     result = null;
-    resultSupplier = initializer;
+    resultSupplier = (Supplier<Fold>) initializer;
   }
 
   /**
@@ -130,8 +135,9 @@ final class GenericGLBProcessor<R extends Fold<R> & Serializable>
    * @param gift
    *          the work given by place {@code p}, possibly <code>null</code>.
    */
-  private synchronized <B extends Bag<B, R> & Serializable> void deal(Place p,
-      B gift) {
+  @SuppressWarnings("unchecked")
+  private synchronized <R extends Fold<R> & Serializable, B extends Bag<B, R> & Serializable> void deal(
+      Place p, B gift) {
     // We are presumably receiving work from place p. Therefore this place
     // should be in state 'p'.
     assert state == p.id;
@@ -156,7 +162,8 @@ final class GenericGLBProcessor<R extends Fold<R> & Serializable>
    * @param <B>
    *          type of offered work given to thieves
    */
-  private <B extends Bag<B, R> & Serializable> void distribute() {
+  @SuppressWarnings("unchecked")
+  private <R extends Fold<R> & Serializable, B extends Bag<B, R> & Serializable> void distribute() {
     if (places == 1) {
       return;
     }
@@ -164,7 +171,7 @@ final class GenericGLBProcessor<R extends Fold<R> & Serializable>
     Place p;
     while ((p = thieves.poll()) != null) {
 
-      final B toGive = bagsToDo.split();
+      final B toGive = (B) bagsToDo.split();
       System.err.println(p + " stole from " + home);
       uncountedAsyncAt(p, () -> {
         deal(h, toGive);
@@ -172,7 +179,7 @@ final class GenericGLBProcessor<R extends Fold<R> & Serializable>
     }
 
     while ((p = lifelineThieves.poll()) != null) {
-      final B toGive = bagsToDo.split();
+      final B toGive = (B) bagsToDo.split();
       if (toGive != null) {
         asyncAt(p, () -> {
           lifelineDeal(toGive);
@@ -188,8 +195,9 @@ final class GenericGLBProcessor<R extends Fold<R> & Serializable>
    * Computes the result from the bags located at this place before sending
    * those to place 0.
    */
-  private void gather() {
-    final R res = resultSupplier.get();
+  @SuppressWarnings("unchecked")
+  private <R extends Fold<R> & Serializable> void gather() {
+    final R res = (R) resultSupplier.get();
     bagsToDo.result(res);
     if (home.id != 0) {
       asyncAt(place(0), () -> {
@@ -212,7 +220,9 @@ final class GenericGLBProcessor<R extends Fold<R> & Serializable>
    * @param q
    *          the work to be given to the place
    */
-  private <B extends Bag<B, R> & Serializable> void lifelineDeal(B q) {
+  @SuppressWarnings("unchecked")
+  private <R extends Fold<R> & Serializable, B extends Bag<B, R> & Serializable> void lifelineDeal(
+      B q) {
     bagsToDo.giveBag(q);
     System.err.println(home + " received work");
 
@@ -397,7 +407,9 @@ final class GenericGLBProcessor<R extends Fold<R> & Serializable>
    * @param fold
    *          the fold to be merged into this place
    */
-  private synchronized void giveResult(R res) {
+  @SuppressWarnings("unchecked")
+  private synchronized <R extends Fold<R> & Serializable> void giveResult(
+      R res) {
     result.fold(res);
   }
 
@@ -407,8 +419,9 @@ final class GenericGLBProcessor<R extends Fold<R> & Serializable>
    * @see apgas.glb.GLBProcessor#compute(apgas.glb.Bag,
    * java.util.function.Supplier)
    */
+  @SuppressWarnings("unchecked")
   @Override
-  public <B extends Bag<B, R> & Serializable, S extends Supplier<R> & Serializable> R compute(
+  public <R extends Fold<R> & Serializable, B extends Bag<B, R> & Serializable, S extends Supplier<R> & Serializable> R compute(
       B bag, S initializer) {
     synchronized (bagsToDo) {
       reset(initializer);
@@ -426,8 +439,9 @@ final class GenericGLBProcessor<R extends Fold<R> & Serializable>
    * @see apgas.glb.GLBProcessor#compute(apgas.glb.Bag,
    * java.util.function.Supplier)
    */
+  @SuppressWarnings("unchecked")
   @Override
-  public <B extends Bag<B, R> & Serializable, S extends Supplier<R> & Serializable> R compute(
+  public <R extends Fold<R> & Serializable, B extends Bag<B, R> & Serializable, S extends Supplier<R> & Serializable> R compute(
       Collection<B> bags, S initializer) {
     synchronized (bagsToDo) {
 
@@ -447,7 +461,8 @@ final class GenericGLBProcessor<R extends Fold<R> & Serializable>
    * Clears the {@link LoopGLBProcessor} of all its tasks and results and
    * prepares it for a new computation.
    */
-  public <S extends Supplier<R> & Serializable> void reset(S initializer) {
+  public <R extends Fold<R> & Serializable, S extends Supplier<R> & Serializable> void reset(
+      S initializer) {
     finish(() -> {
       for (final Place p : places()) {
         asyncAt(p, () -> clear(initializer));
@@ -463,14 +478,15 @@ final class GenericGLBProcessor<R extends Fold<R> & Serializable>
    * @return a collection containing all the {@link Fold} known to the
    *         LoopGLBProcessor, every instance being from a different class
    */
-  private R result() {
+  @SuppressWarnings("unchecked")
+  private <R extends Fold<R> & Serializable> R result() {
     result = resultSupplier.get();
     finish(() -> {
       for (final Place p : places()) {
         asyncAt(p, () -> gather());
       }
     });
-    return result;
+    return (R) result;
 
   }
 

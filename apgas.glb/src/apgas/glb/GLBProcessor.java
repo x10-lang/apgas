@@ -28,25 +28,33 @@ import java.util.function.Supplier;
  * @author Patrick Finnerty
  *
  */
-public interface GLBProcessor<R extends Fold<R> & Serializable> {
+public interface GLBProcessor {
 
   /**
    * Launches the computation of the work given to the GLBProcessor and returns
    * the result.
+   *
+   * @param bag
+   *          initial {@link Bag} to be processed
+   * @param initializer
+   *          the initializer function for the {@link Fold} instance to be
+   *          returned
+   * @return computation result
    */
-  public <B extends Bag<B, R> & Serializable, S extends Supplier<R> & Serializable> R compute(
+  public <R extends Fold<R> & Serializable, B extends Bag<B, R> & Serializable, S extends Supplier<R> & Serializable> R compute(
       B bag, S initializer);
 
   /**
    * Launches the computation of the work given to the GLBProcessor and return
    * the result.
-   * 
+   *
    * @param bags
    *          collection of {@link Bag} to be processed
    * @param initializer
-   *          the initializer function for the {@link Fold} instance
+   *          the initializer function for the {@link Fold} instance to be
+   *          returned
    * @return computation result
    */
-  public <B extends Bag<B, R> & Serializable, S extends Supplier<R> & Serializable> R compute(
+  public <R extends Fold<R> & Serializable, B extends Bag<B, R> & Serializable, S extends Supplier<R> & Serializable> R compute(
       Collection<B> bags, S initializer);
 }

@@ -348,7 +348,7 @@ public class UTSBag implements Serializable, Bag<UTSBag, Sum> {
 
     final MessageDigest md = encoder();
 
-    final GLBProcessor<Sum> processor = GLBProcessorFactory.GLBProcessor(500, 1,
+    final GLBProcessor processor = GLBProcessorFactory.GLBProcessor(500, 1,
         new HypercubeStrategy());
 
     final UTSBag taskBag = new UTSBag(64);

@@ -9,7 +9,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -49,46 +48,15 @@ public class GLBProcessorTest {
    *          the sum value to be obtained
    */
   private void sum(int value) {
-    processor.addBag(new SpawnSum(value));
 
-    processor.compute();
-
-    final Sum res = processor.result();
+    final Sum res = processor.compute(new SpawnSum(value), () -> new Sum(0));
     assert res != null;
 
     assertEquals(value, res.sum);
   }
 
   /**
-   * Resets the LoopGLBProcessor before a new computation is performed
-   */
-  @Before
-  public void before() {
-    processor.reset();
-  }
-
-  /**
-   * Tests the behaviour of the {@link LoopGLBProcessor#reset()} method.
-   */
-  @Test(timeout = 5000)
-  public void resetTest() {
-
-    sum(10);
-    processor.compute();
-    processor.reset();
-
-    Sum res = processor.result();
-    assert res != null;
-    assertEquals(0, res.sum);
-
-    processor.compute(); // Re-launching empty computation
-    res = processor.result();
-    assertEquals(0, res.sum);
-    assert res != null;
-  }
-
-  /**
-   * Test the display of one display task
+   * Test with small number of tasks (no steals performed)
    */
   @Test(timeout = 5000)
   public void sumTest30() {
@@ -97,7 +65,7 @@ public class GLBProcessorTest {
 
   /**
    * Tests the fold of 500 Sum of value 1 As 500 is above the work amount to be
-   * processed by the LoopGLBProcessor, steal occurs.
+   * processed by the GLBProcessor, steals occur.
    */
   @Test(timeout = 5000)
   public void sumTest500() {
@@ -112,12 +80,11 @@ public class GLBProcessorTest {
   @Parameterized.Parameters
   public static Collection<Object[]> toTest() {
     final Collection<Object[]> toReturn = new ArrayList<>();
-    final GLBProcessor<Sum> a = GLBProcessorFactory.LoopGLBProcessor(500, 1,
-        () -> new Sum(0));
+    final GLBProcessor<Sum> a = GLBProcessorFactory.LoopGLBProcessor(500, 1);
     final Object[] first = { a };
     toReturn.add(first);
     final GLBProcessor<Sum> b = GLBProcessorFactory.GLBProcessor(500, 1,
-        new HypercubeStrategy(), () -> new Sum(0));
+        new HypercubeStrategy());
     final Object[] second = { b };
     toReturn.add(second);
     return toReturn;

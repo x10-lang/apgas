@@ -9,7 +9,6 @@ import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -55,16 +54,8 @@ public class UTSTest {
     MD = UTSBag.encoder();
 
     final UTSBag taskBag = new UTSBag(64);
-    processor.addBag(taskBag);
     taskBag.seed(MD, SEED, TREE_DEPTH - 2);
-
-    processor.compute();
-  }
-
-  /** Cleaning performed between tests */
-  @Before
-  public void beforeTest() {
-    processor.reset();
+    processor.compute(taskBag, () -> new Sum(0));
   }
 
   /**
@@ -75,12 +66,10 @@ public class UTSTest {
   @Test(timeout = 20000)
   public void UTS() {
     final UTSBag bag = new UTSBag(64);
-    processor.addBag(bag);
     bag.seed(MD, SEED, TREE_DEPTH);
 
-    processor.compute();
+    final Sum s = processor.compute(bag, () -> new Sum(0));
 
-    final Sum s = processor.result();
     assert s != null;
     assertEquals(EXPECTED_NODES, s.sum);
   }
@@ -94,12 +83,11 @@ public class UTSTest {
   @Parameterized.Parameters
   public static Collection<Object[]> toTest() {
     final Collection<Object[]> toReturn = new ArrayList<>();
-    final GLBProcessor<Sum> a = GLBProcessorFactory.LoopGLBProcessor(500, 1,
-        () -> new Sum(0));
+    final GLBProcessor<Sum> a = GLBProcessorFactory.LoopGLBProcessor(500, 1);
     final Object[] first = { a };
     toReturn.add(first);
     final GLBProcessor<Sum> b = GLBProcessorFactory.GLBProcessor(500, 1,
-        new HypercubeStrategy(), () -> new Sum(0));
+        new HypercubeStrategy());
     final Object[] second = { b };
     toReturn.add(second);
     return toReturn;

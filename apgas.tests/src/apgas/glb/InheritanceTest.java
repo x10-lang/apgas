@@ -9,7 +9,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -38,14 +37,6 @@ public class InheritanceTest {
   }
 
   /**
-   * Resets the computer back to a clean state
-   */
-  @Before
-  public void setUp() {
-    processor.reset();
-  }
-
-  /**
    * Tests a simple inheritance situation First will spawn an AMOUNT number of
    * Second instances which in turn are going to spawn the same amount of Sum(1)
    * instances. Hence the final expected result of Sum is AMOUNT.
@@ -54,9 +45,8 @@ public class InheritanceTest {
   public void inheritanceTest1() {
     final int RESULT = 400;
     final First bag = new First(RESULT);
-    processor.addBag(bag);
-    processor.compute();
-    final Sum s = processor.result();
+
+    final Sum s = processor.compute(bag, () -> new Sum(0));
     assert s != null;
     assertEquals(RESULT, s.sum);
   }
@@ -69,12 +59,11 @@ public class InheritanceTest {
   @Parameterized.Parameters
   public static Collection<Object[]> toTest() {
     final Collection<Object[]> toReturn = new ArrayList<>();
-    final GLBProcessor<Sum> a = GLBProcessorFactory.LoopGLBProcessor(500, 1,
-        () -> new Sum(0));
+    final GLBProcessor<Sum> a = GLBProcessorFactory.LoopGLBProcessor(500, 1);
     final Object[] first = { a };
     toReturn.add(first);
     final GLBProcessor<Sum> b = GLBProcessorFactory.GLBProcessor(500, 1,
-        new HypercubeStrategy(), () -> new Sum(0));
+        new HypercubeStrategy());
     final Object[] second = { b };
     toReturn.add(second);
     return toReturn;

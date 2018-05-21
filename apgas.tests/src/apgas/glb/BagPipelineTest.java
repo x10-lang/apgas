@@ -9,7 +9,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -35,19 +34,10 @@ public class BagPipelineTest {
   @Test(timeout = 5000)
   public void pipelineTest() {
     final int RESULT = 500;
-    processor.addBag(new FirstBag(RESULT));
-    processor.compute();
-    final Sum s = processor.result();
+
+    final Sum s = processor.compute(new FirstBag(RESULT), () -> new Sum(0));
     assert s != null;
     assertEquals(RESULT, s.sum);
-  }
-
-  /**
-   * Resets the computer for a new computation
-   */
-  @Before
-  public void setup() {
-    processor.reset();
   }
 
   /**
@@ -68,12 +58,11 @@ public class BagPipelineTest {
   @Parameterized.Parameters
   public static Collection<Object[]> toTest() {
     final Collection<Object[]> toReturn = new ArrayList<>();
-    final GLBProcessor<Sum> a = GLBProcessorFactory.LoopGLBProcessor(500, 1,
-        () -> new Sum(0));
+    final GLBProcessor<Sum> a = GLBProcessorFactory.LoopGLBProcessor(500, 1);
     final Object[] first = { a };
     toReturn.add(first);
     final GLBProcessor<Sum> b = GLBProcessorFactory.GLBProcessor(500, 1,
-        new HypercubeStrategy(), () -> new Sum(0));
+        new HypercubeStrategy());
     final Object[] second = { b };
     toReturn.add(second);
     return toReturn;

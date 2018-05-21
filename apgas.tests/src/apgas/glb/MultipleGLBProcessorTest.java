@@ -7,9 +7,6 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 
-import apgas.glb.GLBProcessor;
-import apgas.glb.GLBProcessorFactory;
-import apgas.glb.HypercubeStrategy;
 import apgas.glb.example.Sum;
 import apgas.glb.example.UTSBag;
 
@@ -24,34 +21,27 @@ public class MultipleGLBProcessorTest {
    */
   @Test
   public void multipleGLBProcessorTest() {
-    final GLBProcessor<Sum> a = GLBProcessorFactory.LoopGLBProcessor(100, 1,
-        () -> new Sum(0));
+    final GLBProcessor<Sum> a = GLBProcessorFactory.LoopGLBProcessor(100, 1);
 
     final UTSBag uts = new UTSBag(64);
     uts.seed(UTSBag.encoder(), 13, 13);
 
-    a.addBag(uts);
-    a.compute();
-
-    final long RESULT = a.result().sum;
+    final long RESULT = a.compute(uts, () -> new Sum(0)).sum;
 
     final GLBProcessor<Sum> b = GLBProcessorFactory.GLBProcessor(100, 1,
-        new HypercubeStrategy(), () -> new Sum(0));
+        new HypercubeStrategy());
 
     final UTSBag otherUts = new UTSBag(64);
     otherUts.seed(UTSBag.encoder(), 13, 13);
 
-    b.addBag(otherUts);
-    b.compute();
-    assertEquals(RESULT, b.result().sum);
+    final long bResult = b.compute(otherUts, () -> new Sum(0)).sum;
+    assertEquals(RESULT, bResult);
 
     final UTSBag yetAnotherUts = new UTSBag(64);
     yetAnotherUts.seed(UTSBag.encoder(), 13, 13);
 
-    a.reset();
-    a.addBag(yetAnotherUts);
-    a.compute();
-    assertEquals(RESULT, a.result().sum);
+    final long aResult = a.compute(yetAnotherUts, () -> new Sum(0)).sum;
+    assertEquals(RESULT, aResult);
   }
 
 }

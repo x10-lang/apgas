@@ -46,7 +46,7 @@ public class InheritanceTest {
     final int RESULT = 400;
     final First bag = new First(RESULT);
 
-    final Sum s = processor.compute(bag, () -> new Sum(0));
+    final Sum s = processor.compute(bag, new Sum(0));
     assert s != null;
     assertEquals(RESULT, s.sum);
   }

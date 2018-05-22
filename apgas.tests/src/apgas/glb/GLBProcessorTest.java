@@ -55,7 +55,7 @@ public class GLBProcessorTest {
    */
   private void sum(int value) {
 
-    final Sum res = processor.compute(new SpawnSum(value), () -> new Sum(0));
+    final Sum res = processor.compute(new SpawnSum(value), new Sum(0));
     assert res != null;
 
     assertEquals(value, res.sum);
@@ -93,8 +93,8 @@ public class GLBProcessorTest {
 
     Constructs.finish(() -> {
       Constructs.async(() -> {
-        first.fold(processor.compute(firstComputation, () -> new Sum(0)));
-        second.fold(processor.compute(secondComputation, () -> new Sum(0)));
+        first.fold(processor.compute(firstComputation, new Sum(0)));
+        second.fold(processor.compute(secondComputation, new Sum(0)));
       });
     });
 
@@ -120,7 +120,7 @@ public class GLBProcessorTest {
     initialBags.add((B) firstComputation);
     initialBags.add((B) secondComputation);
 
-    final Sum s = processor.compute(initialBags, () -> new Sum(0));
+    final Sum s = processor.compute(initialBags, new Sum(0));
 
     assertEquals(UTS_EXPECTED_NODES + 500, s.sum);
   }

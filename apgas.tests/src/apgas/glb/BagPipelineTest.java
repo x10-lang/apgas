@@ -35,7 +35,7 @@ public class BagPipelineTest {
   public void pipelineTest() {
     final int RESULT = 500;
 
-    final Sum s = processor.compute(new FirstBag(RESULT), () -> new Sum(0));
+    final Sum s = processor.compute(new FirstBag(RESULT), new Sum(0));
     assert s != null;
     assertEquals(RESULT, s.sum);
   }

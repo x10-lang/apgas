@@ -26,7 +26,7 @@ public class MultipleGLBProcessorTest {
     final UTSBag uts = new UTSBag(64);
     uts.seed(UTSBag.encoder(), 13, 13);
 
-    final long RESULT = a.compute(uts, () -> new Sum(0)).sum;
+    final long RESULT = a.compute(uts, new Sum(0)).sum;
 
     final GLBProcessor b = GLBProcessorFactory.GLBProcessor(100, 1,
         new HypercubeStrategy());
@@ -34,13 +34,13 @@ public class MultipleGLBProcessorTest {
     final UTSBag otherUts = new UTSBag(64);
     otherUts.seed(UTSBag.encoder(), 13, 13);
 
-    final long bResult = b.compute(otherUts, () -> new Sum(0)).sum;
+    final long bResult = b.compute(otherUts, new Sum(0)).sum;
     assertEquals(RESULT, bResult);
 
     final UTSBag yetAnotherUts = new UTSBag(64);
     yetAnotherUts.seed(UTSBag.encoder(), 13, 13);
 
-    final long aResult = a.compute(yetAnotherUts, () -> new Sum(0)).sum;
+    final long aResult = a.compute(yetAnotherUts, new Sum(0)).sum;
     assertEquals(RESULT, aResult);
   }
 

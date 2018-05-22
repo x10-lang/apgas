@@ -356,14 +356,14 @@ public class UTSBag implements Serializable, Bag<UTSBag, Sum> {
 
     System.out.println("Warmup...");
 
-    processor.compute(taskBag, () -> new Sum(0));
+    processor.compute(taskBag, new Sum(0));
 
     final UTSBag secondBag = new UTSBag(64);
     secondBag.seed(md, 19, depth);
 
     System.out.println("Starting...");
     final long start = System.nanoTime();
-    final long count = processor.compute(secondBag, () -> new Sum(0)).sum;
+    final long count = processor.compute(secondBag, new Sum(0)).sum;
 
     System.out.println("Finished.");
 

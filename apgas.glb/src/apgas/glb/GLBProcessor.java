@@ -5,7 +5,6 @@ package apgas.glb;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.function.Supplier;
 
 /**
  * Computing service abstraction. GLBProcessor uses a lifeline-based global load
@@ -41,8 +40,8 @@ public interface GLBProcessor {
    *          returned
    * @return computation result
    */
-  public <R extends Fold<R> & Serializable, B extends Bag<B, R> & Serializable, S extends Supplier<R> & Serializable> R compute(
-      B bag, S initializer);
+  public <R extends Fold<R> & Serializable, B extends Bag<B, R> & Serializable> R compute(
+      B bag, R result);
 
   /**
    * Launches the computation of the work given to the GLBProcessor and return
@@ -55,6 +54,6 @@ public interface GLBProcessor {
    *          returned
    * @return computation result
    */
-  public <R extends Fold<R> & Serializable, B extends Bag<B, R> & Serializable, S extends Supplier<R> & Serializable> R compute(
-      Collection<B> bags, S initializer);
+  public <R extends Fold<R> & Serializable, B extends Bag<B, R> & Serializable> R compute(
+      Collection<B> bags, R result);
 }

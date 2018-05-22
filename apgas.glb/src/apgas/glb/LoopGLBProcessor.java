@@ -10,7 +10,6 @@ import java.util.Collection;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
 
 import apgas.Place;
 import apgas.util.PlaceLocalObject;
@@ -37,9 +36,6 @@ final class LoopGLBProcessor extends PlaceLocalObject implements GLBProcessor {
   /** Fold instance for this local place */
   @SuppressWarnings("rawtypes")
   private Fold result = null;
-
-  @SuppressWarnings("rawtypes")
-  private Supplier<Fold> resultSupplier;
 
   /** Brings the APGAS place id to the class {@link LoopGLBProcessor} */
   private final Place home = here();
@@ -98,15 +94,12 @@ final class LoopGLBProcessor extends PlaceLocalObject implements GLBProcessor {
   /**
    * Puts this local place to a ready to compute state.
    */
-  @SuppressWarnings({ "unchecked", "rawtypes" })
-  private <R extends Fold<R> & Serializable> void clear(
-      Supplier<R> initializer) {
+  private <R extends Fold<R> & Serializable> void clear(R init) {
     thieves.clear();
     lifeline.set(home.id != 3);
     state = -2;
     bagsToDo = new BagQueue<R>();
-    result = null;
-    resultSupplier = (Supplier<Fold>) initializer;
+    result = init;
   }
 
   /**
@@ -186,15 +179,15 @@ final class LoopGLBProcessor extends PlaceLocalObject implements GLBProcessor {
    */
   @SuppressWarnings("unchecked")
   private <R extends Fold<R> & Serializable> void gather() {
-    final R res = (R) resultSupplier.get();
-    bagsToDo.result(res);
+    synchronized (result) {
+      bagsToDo.result(result);
+    }
 
+    final R r = (R) result;
     if (home.id != 0) {
       asyncAt(place(0), () -> {
-        giveResult(res);
+        giveResult(r);
       });
-    } else {
-      giveResult(res);
     }
   }
 
@@ -383,20 +376,20 @@ final class LoopGLBProcessor extends PlaceLocalObject implements GLBProcessor {
    *          the fold to be merged into this place
    */
   @SuppressWarnings("unchecked")
-  private synchronized <R extends Fold<R> & Serializable> void giveResult(
-      R res) {
-    result.fold(res);
-
+  private <R extends Fold<R> & Serializable> void giveResult(R res) {
+    synchronized (result) {
+      result.fold(res);
+    }
   }
 
   /** Launches the computation of the given work */
   @SuppressWarnings("unchecked")
   @Override
-  public <R extends Fold<R> & Serializable, B extends Bag<B, R> & Serializable, S extends Supplier<R> & Serializable> R compute(
-      B bag, S initializer) {
+  public <R extends Fold<R> & Serializable, B extends Bag<B, R> & Serializable> R compute(
+      B bag, R init) {
     synchronized (bagsToDo) {
 
-      reset(initializer);
+      reset(init);
       bagsToDo.giveBag(bag);
       finish(() -> {
         run();
@@ -413,11 +406,11 @@ final class LoopGLBProcessor extends PlaceLocalObject implements GLBProcessor {
    */
   @SuppressWarnings("unchecked")
   @Override
-  public <R extends Fold<R> & Serializable, B extends Bag<B, R> & Serializable, S extends Supplier<R> & Serializable> R compute(
-      Collection<B> bags, S initializer) {
+  public <R extends Fold<R> & Serializable, B extends Bag<B, R> & Serializable> R compute(
+      Collection<B> bags, R init) {
     synchronized (bagsToDo) {
 
-      reset(initializer);
+      reset(init);
       for (final B bag : bags) {
         bagsToDo.giveBag(bag);
       }
@@ -433,8 +426,7 @@ final class LoopGLBProcessor extends PlaceLocalObject implements GLBProcessor {
    * Clears the {@link LoopGLBProcessor} of all its tasks and results and
    * prepares it for a new computation.
    */
-  private <R extends Fold<R> & Serializable, S extends Supplier<R> & Serializable> void reset(
-      S initializer) {
+  private <R extends Fold<R> & Serializable> void reset(R initializer) {
     finish(() -> {
       for (final Place p : places()) {
         asyncAt(p, () -> clear(initializer));
@@ -452,7 +444,6 @@ final class LoopGLBProcessor extends PlaceLocalObject implements GLBProcessor {
    */
   @SuppressWarnings("unchecked")
   private <R extends Fold<R> & Serializable> R result() {
-    result = resultSupplier.get();
     finish(() -> {
       for (final Place p : places()) {
         // Folding this instance's folds into that of place 0

@@ -55,7 +55,7 @@ public class UTSTest {
 
     final UTSBag taskBag = new UTSBag(64);
     taskBag.seed(MD, SEED, TREE_DEPTH - 2);
-    processor.compute(taskBag, () -> new Sum(0));
+    processor.compute(taskBag, new Sum(0));
   }
 
   /**
@@ -68,7 +68,7 @@ public class UTSTest {
     final UTSBag bag = new UTSBag(64);
     bag.seed(MD, SEED, TREE_DEPTH);
 
-    final Sum s = processor.compute(bag, () -> new Sum(0));
+    final Sum s = processor.compute(bag, new Sum(0));
 
     assert s != null;
     assertEquals(EXPECTED_NODES, s.sum);

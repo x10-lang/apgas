@@ -5,18 +5,18 @@ package apgas.glb;
 
 /**
  * Work stealing strategy for GLBProcessor. When a place runs out of work, the
- * {@link LifelineStrategy} determines which places the thief can steal work
- * from.
+ * {@link LifelineStrategy} determines which places the thief steals work from.
  * <p>
  * The places a thief can steal work from are called its 'lifelines'. To be
  * valid, a {@link LifelineStrategy} needs to satisfy several properties that
- * are easily explained in terms of graphs. Consider the oriented graph whose
- * vertices are the places of the system and where an edge from vertex A to B
- * means that A has a lifeline on B. A valid {@link LifelineStrategy} consists
- * in a connected graph, i.e. there must be a path (direct of with several
- * jumps) from each place to every other place. If this is not the case, some of
- * the places could starve when they run out of work since they are not able to
- * steal any work.
+ * are easily explained in terms of graphs.
+ * <p>
+ * Consider the oriented graph whose vertices are the places of the system and
+ * where an edge from vertex A to B means that A has a lifeline on B. A valid
+ * {@link LifelineStrategy} consists in a connected graph, i.e. there must be a
+ * path (direct of with several jumps) from each place to every other place. If
+ * this is not the case, some of the places could starve work since they are not
+ * able to steal any work.
  *
  * @author Patrick Finnerty
  *

@@ -17,9 +17,14 @@ import apgas.util.PlaceLocalObject;
 /**
  * LoopGLBProcessor proposes a simple API to request for work to be computed
  * using the lifeline based global load balancing framework relying on APGAS.
+ * <p>
+ * This implementation only handles a fixed lifeline strategy consisting of a
+ * directed loop between all places. Other strategies necessarily imply several
+ * lifelines per place need added protection that the {@link LoopGLBProcessor}
+ * cannot handle.
  *
  * @author Patrick Finnerty
- *
+ * @see GenericGLBProcessor
  */
 final class LoopGLBProcessor extends PlaceLocalObject implements GLBProcessor {
 
@@ -101,7 +106,8 @@ final class LoopGLBProcessor extends PlaceLocalObject implements GLBProcessor {
    * parameter type of the result also allows us to initialize a new instance
    * for {@link #bagsToDo} with the proper generic parameter type.
    *
-   * @param<R>
+   * @param <R>
+   *          result parameter type
    *
    * @param init
    *          neutral element of the desired result type for the computation to
@@ -336,7 +342,6 @@ final class LoopGLBProcessor extends PlaceLocalObject implements GLBProcessor {
      * Sending null to thieves that have managed to ask for work between to
      * random steals. This is absolutely necessary. The computation may not end
      * if this was not done.
-     *
      */
     Place p;
     while ((p = thieves.poll()) != null) {
@@ -388,15 +393,18 @@ final class LoopGLBProcessor extends PlaceLocalObject implements GLBProcessor {
     });
 
     synchronized (this) { // synchronized block necessary for the wait() call.
-      while (state >= 0) { // enclosing safety loop. State is set back to -1
-                           // ('running') in method deal when the answer is
-                           // received.
+      /*
+       * Enclosing safety loop. State is set back to -1 ('running') in method
+       * deal when the answer is received, thus lifting the barrier.
+       */
+      while (state >= 0) {
         try {
           wait();
         } catch (final InterruptedException e) {
         }
       }
     }
+
   }
 
   /**

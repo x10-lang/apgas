@@ -13,52 +13,18 @@ import apgas.util.PlaceLocalObject;
 /**
  * Factory class for {@link GLBProcessor}s.
  * <p>
- * Prepares GLBProcessor and returns them.
+ * Sets up GLBProcessors instances to make them readily available for
+ * computation.
  *
  * @author Patrick Finnerty
  *
  */
 public class GLBProcessorFactory {
 
-  /** Default number of tasks to process before responding to thieves */
-  public static final int DEFAULT_WORK_UNIT = 40;
-
-  /**
-   * Number of attempted random steals before the place skips to its lifeline
-   * steal strategy
-   */
-  public static final int DEFAULT_RANDOM_STEAL_ATTEMPTS = 1;
-
   /**
    * Default number of places on which the computation is going to take place
    */
   public static final String DEFAULT_PLACE_COUNT = "4";
-
-  /**
-   * Creates a LoopGLBProcessor (factory method)
-   * <p>
-   * This yields a LoopGLBProcessor using default configuration.
-   *
-   * @param <R>
-   *          Type of the result for the created GLBProcessor
-   * @param <S>
-   *          Type for the Supplier of <R>
-   * @param resultInit
-   *          Supplier of <R> type neutral element. Functional interface
-   *          implementation, should use a lambda expression as parameter.
-   * @return a new computing instance
-   * @see #LoopGLBProcessor(int, int)
-   */
-  public static GLBProcessor LoopGLBProcessor() {
-    if (System.getProperty(Configuration.APGAS_PLACES) == null) {
-      System.setProperty(Configuration.APGAS_PLACES, DEFAULT_PLACE_COUNT);
-    }
-
-    final LoopGLBProcessor glb = PlaceLocalObject.make(places(),
-        () -> new LoopGLBProcessor(DEFAULT_WORK_UNIT,
-            DEFAULT_RANDOM_STEAL_ATTEMPTS));
-    return glb;
-  }
 
   /**
    * Creates a LoopGLBProcessor (factory method)
@@ -98,7 +64,7 @@ public class GLBProcessorFactory {
 
   /**
    * Creates a generic GLBProcessor following the given workUnit stealAttempts
-   * and lifeline strategy provided
+   * and lifeline strategy provided.
    *
    * @param <S>
    *          Type of the strategy parameter
@@ -115,6 +81,7 @@ public class GLBProcessorFactory {
    *          Supplier of <R> type neutral element. Functional interface
    *          implementation, should use a lambda expression as parameter.
    * @return a new computing instance
+   * @see LifelineStrategy
    */
   public static <S extends LifelineStrategy & Serializable> GLBProcessor GLBProcessor(
       int workUnit, int stealAttempts, S strategy) {

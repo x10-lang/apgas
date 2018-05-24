@@ -33,25 +33,33 @@ public interface GLBProcessor {
    * Launches the computation of the work given to the GLBProcessor and returns
    * the result.
    *
+   * @param <R>
+   *          result type the computation yields
+   * @param <B>
+   *          initial bag type, producing result of type <em>R</em>
+   *
    * @param bag
-   *          initial {@link Bag} to be processed
-   * @param initializer
-   *          the initializer function for the {@link Fold} instance to be
-   *          returned
+   *          {@link Bag} to be processed
+   * @param result
+   *          neutral element instance of the result produced by the computation
    * @return computation result
    */
   public <R extends Fold<R> & Serializable, B extends Bag<B, R> & Serializable> R compute(
       B bag, R result);
 
   /**
-   * Launches the computation of the work given to the GLBProcessor and return
+   * Launches the computation of the work given to the GLBProcessor and returns
    * the result.
+   *
+   * @param <R>
+   *          result type the computation yields
+   * @param <B>
+   *          initial bag type, producing result of type <em>R</em>
    *
    * @param bags
    *          collection of {@link Bag} to be processed
-   * @param initializer
-   *          the initializer function for the {@link Fold} instance to be
-   *          returned
+   * @param result
+   *          neutral element instance of the result produced by the computation
    * @return computation result
    */
   public <R extends Fold<R> & Serializable, B extends Bag<B, R> & Serializable> R compute(

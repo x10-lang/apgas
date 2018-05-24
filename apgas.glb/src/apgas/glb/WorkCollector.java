@@ -7,8 +7,8 @@ import java.io.Serializable;
 
 /**
  * Service provider for {@link Bag}. It allows {@link Bag} instances to submit a
- * new {@link Bag} instance to be processed by the {@link GLBProcessor} as part
- * of their {@link Bag#process(int)} method.
+ * new {@link Bag} instance to be processed by the {@link GLBProcessor} during
+ * their {@link Bag#process(int)} method.
  * <p>
  * {@link WorkCollector} instance are provided to {@link Bag} instances through
  * their {@link Bag#setWorkCollector(WorkCollector)} method. The implementation
@@ -34,6 +34,7 @@ public interface WorkCollector<R extends Fold<R>> {
    *
    * @param b
    *          the task bag to be added to the WorkCollector
+   * @see Bag#setWorkCollector(WorkCollector)
    */
   public <B extends Bag<B, R> & Serializable> void giveBag(B b);
 }

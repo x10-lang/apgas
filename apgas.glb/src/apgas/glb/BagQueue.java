@@ -7,21 +7,27 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 /**
- * {@link BagQueue} is the class used to handle the {@link Bag} instances of the
- * {@link LoopGLBProcessor}.
+ * {@link BagQueue} is the class used to handle the {@link Bag}s to compute in
+ * the {@link LoopGLBProcessor} implementation.
+ * <p>
+ *
  *
  * @author Patrick Finnerty
- *
+ * @see ConcurrentBagQueue
  */
 class BagQueue<R extends Fold<R> & Serializable> implements WorkCollector<R> {
 
-  /** Index of the last Bag that actually had some work in it */
+  /**
+   * Index of the last Bag that was processed. Is updated by
+   * {@link #process(int)} as the computation takes place and the successive
+   * {@link Bag}s become empty.
+   */
   private int lastPlaceWithWork = 0;
 
   /** First free index in the bag queue */
   private int last = 0;
 
-  /** Array used as circular buffer to contain {@link Bag}s */
+  /** Array used to store the {@link Bag}s */
   private Object bags[] = new Bag[16];
 
   /**
@@ -33,12 +39,14 @@ class BagQueue<R extends Fold<R> & Serializable> implements WorkCollector<R> {
   }
 
   /**
-   * Adds the {@link Bag} given as parameter to the end of the {@link BagQueue}.
-   * If another instance of the same class as the given parameter exists in the
-   * {@link BagQueue}, it will merged into it.
+   * Adds the {@link Bag} given as parameter to the {@link BagQueue}. If another
+   * instance of the same class as the given parameter exists in the
+   * {@link BagQueue}, it will merged into it. If there are no such existing
+   * instance, the {@link Bag} is added at the {@link #last} index in the array.
+   * If array {@link #bags} becomes full as a consequence, increases its size.
    *
    * @param <B>
-   *          parameter type
+   *          type of the bag to be added
    * @param b
    *          the bag to add to the queue
    */
@@ -76,13 +84,12 @@ class BagQueue<R extends Fold<R> & Serializable> implements WorkCollector<R> {
 
   /**
    * Indicates if this {@link TaskBag} is empty, that is that it does not
-   * contain any {@link Bag}.
+   * contain any {@link Bag} or that all the {@link Bag}s it contains are empty.
    *
    * @return true if empty, false otherwise
    */
   @SuppressWarnings("rawtypes")
   public boolean isEmpty() {
-
     if (last == 0) {
       return true;
     }
@@ -103,10 +110,12 @@ class BagQueue<R extends Fold<R> & Serializable> implements WorkCollector<R> {
   }
 
   /**
-   * Processes the given amount of work in the first Bag in the queue.
+   * Finds a {@link Bag} in the queue with work and processes the given amount
+   * of work on it.
    *
    * @param workAmount
    *          amount of work to be processed
+   * @see Bag#process(int)
    */
   @SuppressWarnings("rawtypes")
   public void process(int workAmount) {
@@ -120,14 +129,16 @@ class BagQueue<R extends Fold<R> & Serializable> implements WorkCollector<R> {
       } while (b.isEmpty() && i != lastPlaceWithWork);
     }
     b.process(workAmount);
-
   }
 
   /**
-   * Computes the result from the bags contained by this bag queue.
+   * Gathers the result from the bags contained by this bag queue. The result
+   * instance in which all the bags should store their result is given as
+   * parameter.
    *
    * @param res
    *          result instance in which the results of the bags are to be stored
+   * @see Bag#submit(Fold)
    */
   @SuppressWarnings("unchecked")
   public void result(R res) {
@@ -138,16 +149,15 @@ class BagQueue<R extends Fold<R> & Serializable> implements WorkCollector<R> {
 
   /**
    * Tries to split the {@link Bag}s contained in the {@link BagQueue} and
-   * returns the split. If no work could be be split from the any {@link Bag},
+   * returns the split. If no work could be be split from any {@link Bag},
    * returns null.
    *
    * @param <B>
-   *          type parameter
+   *          return type
    * @return some {@link Bag} instance or null is no split could be performed.
    */
   @SuppressWarnings("unchecked")
   public <B extends Bag<B, R> & Serializable> B split() {
-
     B split = null;
     for (int i = 0; i != last; i++) {
       split = ((B) bags[i]).split();
@@ -156,7 +166,6 @@ class BagQueue<R extends Fold<R> & Serializable> implements WorkCollector<R> {
       }
     }
     return split;
-
   }
 
   /**
@@ -175,5 +184,4 @@ class BagQueue<R extends Fold<R> & Serializable> implements WorkCollector<R> {
     b.setWorkCollector(this);
     addBag(b);
   }
-
 }

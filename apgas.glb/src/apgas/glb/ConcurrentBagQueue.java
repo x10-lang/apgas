@@ -8,27 +8,32 @@ import java.util.Arrays;
 
 /**
  * {@link ConcurrentBagQueue} is the class used to handle {@link Bag} instances
- * of the {@link GenericGLBProcessor}. It is pratically identical to
+ * in the {@link GenericGLBProcessor} implementation. It is identical to
  * {@link BagQueue}, albeit protected against concurrency accesses susceptible
- * to occur with {@link GenericGLBProcessor}.
+ * to occur with the {@link GenericGLBProcessor} implementation.
  *
  * @author Patrick Finnerty
+ * @see BagQueue
  *
  */
 class ConcurrentBagQueue<R extends Fold<R> & Serializable>
     implements WorkCollector<R> {
 
-  /** Index of the last Bag that actually had some work in it */
+  /**
+   * Index of the last Bag that actually had some work in it. This value is
+   * updated by method {@link #process(int)} as the successive {@link Bag}s
+   * become empty.
+   */
   private int lastPlaceWithWork = 0;
 
-  /** First free index in the bag queue */
+  /** First free index in the {@link #bags} array */
   private int last = 0;
 
-  /** Array used as circular buffer to contain {@link Bag}s */
+  /** Array used to contain the {@link Bag}s */
   private Object bags[] = new Bag[16];
 
   /**
-   * Doubles the capacity of the {@link #bags} array. Copying the contained
+   * Doubles the capacity of the {@link #bags} array, copying the contained
    * {@link Bag}s to the new array.
    */
   private void grow() {
@@ -36,13 +41,14 @@ class ConcurrentBagQueue<R extends Fold<R> & Serializable>
   }
 
   /**
-   * Adds the {@link Bag} given as parameter to the end of the
-   * {@link ConcurrentBagQueue}. If another instance of the same class as the
-   * given parameter exists in the {@link ConcurrentBagQueue}, it will merged
-   * into it.
+   * Adds the {@link Bag} given as parameter to the {@link BagQueue}. If another
+   * instance of the same class as the given parameter exists in the
+   * {@link BagQueue}, it will merged into it. If there are no such existing
+   * instance, the {@link Bag} is added at the {@link #last} index in the array.
+   * If array {@link #bags} becomes full as a consequence, increases its size.
    *
    * @param <B>
-   *          parameter type
+   *          type of the bag to be added
    * @param b
    *          the bag to add to the queue
    */
@@ -81,7 +87,7 @@ class ConcurrentBagQueue<R extends Fold<R> & Serializable>
 
   /**
    * Indicates if this {@link TaskBag} is empty, that is that it does not
-   * contain any {@link Bag}.
+   * contain any {@link Bag} or that all the {@link Bag}s it contains are empty.
    *
    * @return true if empty, false otherwise
    */
@@ -108,10 +114,12 @@ class ConcurrentBagQueue<R extends Fold<R> & Serializable>
   }
 
   /**
-   * Processes the given amount of work in the first Bag in the queue.
+   * Finds a {@link Bag} in the queue with work and processes the given amount
+   * of work on it.
    *
    * @param workAmount
    *          amount of work to be processed
+   * @see Bag#process(int)
    */
   @SuppressWarnings("rawtypes")
   public void process(int workAmount) {
@@ -129,10 +137,13 @@ class ConcurrentBagQueue<R extends Fold<R> & Serializable>
   }
 
   /**
-   * Computes the result from the bags contained by this bag queue.
+   * Gathers the result from the bags contained by this bag queue. The result
+   * instance in which all the bags should store their result is given as
+   * parameter.
    *
    * @param res
    *          result instance in which the results of the bags are to be stored
+   * @see Bag#submit(Fold)
    */
   @SuppressWarnings("unchecked")
   public void result(R res) {
@@ -147,7 +158,7 @@ class ConcurrentBagQueue<R extends Fold<R> & Serializable>
    * {@link Bag}, returns null.
    *
    * @param <B>
-   *          type parameter
+   *          return type
    * @return some {@link Bag} instance or null is no split could be performed.
    */
   @SuppressWarnings("unchecked")

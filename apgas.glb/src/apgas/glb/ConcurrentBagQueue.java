@@ -52,7 +52,8 @@ class ConcurrentBagQueue<R extends Fold<R> & Serializable>
    * @param b
    *          the bag to add to the queue
    */
-  private <B extends Bag<B, R> & Serializable> void addBag(B b) {
+  @Override
+  public <B extends Bag<B, R> & Serializable> void giveBag(B b) {
     synchronized (this) {
       for (int i = 0; i < last; i++) {
         @SuppressWarnings("unchecked")
@@ -121,7 +122,7 @@ class ConcurrentBagQueue<R extends Fold<R> & Serializable>
    *          amount of work to be processed
    * @see Bag#process(int)
    */
-  @SuppressWarnings("rawtypes")
+  @SuppressWarnings({ "rawtypes", "unchecked" })
   public void process(int workAmount) {
     synchronized (this) {
       final int i = lastPlaceWithWork;
@@ -132,7 +133,7 @@ class ConcurrentBagQueue<R extends Fold<R> & Serializable>
           b = (Bag) bags[i];
         } while (b.isEmpty() && i != lastPlaceWithWork);
       }
-      b.process(workAmount);
+      b.process(workAmount, this);
     }
   }
 
@@ -179,17 +180,6 @@ class ConcurrentBagQueue<R extends Fold<R> & Serializable>
    * Constructor
    */
   public ConcurrentBagQueue() {
-  }
-
-  /*
-   * (non-Javadoc)
-   *
-   * @see apgas.glb.WorkCollector#giveBag(apgas.glb.Bag)
-   */
-  @Override
-  public <B extends Bag<B, R> & Serializable> void giveBag(B b) {
-    b.setWorkCollector(this);
-    addBag(b);
   }
 
 }

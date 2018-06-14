@@ -82,9 +82,6 @@ public class InheritanceTest {
     /** Data shared amongst children */
     public int data;
 
-    /** WorkCollector responsible for processing the tasks spawned */
-    protected WorkCollector<Sum> processor;
-
     /**
      * Constructor
      * <p>
@@ -115,17 +112,6 @@ public class InheritanceTest {
     @Override
     public boolean isEmpty() {
       return data <= 0;
-    }
-
-    /*
-     * (non-Javadoc)
-     *
-     * @see apgas.glb.Bag#setProcessor(apgas.glb.WorkCollector)
-     */
-    @Override
-    public void setWorkCollector(WorkCollector<Sum> p) {
-      processor = p;
-
     }
 
     @Override
@@ -161,9 +147,9 @@ public class InheritanceTest {
      * @see apgas.glb.Bag#process(int)
      */
     @Override
-    public void process(int workAmount) {
+    public void process(int workAmount, WorkCollector<Sum> p) {
       while (data > 0 && workAmount > 0) {
-        processor.giveBag(new Second(1));
+        p.giveBag(new Second(1));
         data--;
         workAmount--;
       }
@@ -212,7 +198,7 @@ public class InheritanceTest {
      * @see apgas.glb.Bag#process(int)
      */
     @Override
-    public void process(int workAmount) {
+    public void process(int workAmount, WorkCollector<Sum> p) {
       while (data > 0 && workAmount > 0) {
         result++;
         data--;

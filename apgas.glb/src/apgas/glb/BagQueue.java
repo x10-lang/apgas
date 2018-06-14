@@ -50,7 +50,8 @@ class BagQueue<R extends Fold<R> & Serializable> implements WorkCollector<R> {
    * @param b
    *          the bag to add to the queue
    */
-  private <B extends Bag<B, R> & Serializable> void addBag(B b) {
+  @Override
+  public <B extends Bag<B, R> & Serializable> void giveBag(B b) {
     for (int i = 0; i < last; i++) {
       @SuppressWarnings("unchecked")
       final B a = (B) bags[i];
@@ -117,7 +118,7 @@ class BagQueue<R extends Fold<R> & Serializable> implements WorkCollector<R> {
    *          amount of work to be processed
    * @see Bag#process(int)
    */
-  @SuppressWarnings("rawtypes")
+  @SuppressWarnings({ "rawtypes", "unchecked" })
   public void process(int workAmount) {
 
     final int i = lastPlaceWithWork;
@@ -128,7 +129,7 @@ class BagQueue<R extends Fold<R> & Serializable> implements WorkCollector<R> {
         b = (Bag) bags[i];
       } while (b.isEmpty() && i != lastPlaceWithWork);
     }
-    b.process(workAmount);
+    b.process(workAmount, this);
   }
 
   /**
@@ -174,14 +175,4 @@ class BagQueue<R extends Fold<R> & Serializable> implements WorkCollector<R> {
   public BagQueue() {
   }
 
-  /*
-   * (non-Javadoc)
-   *
-   * @see apgas.glb.WorkCollector#giveBag(apgas.glb.Bag)
-   */
-  @Override
-  public <B extends Bag<B, R> & Serializable> void giveBag(B b) {
-    b.setWorkCollector(this);
-    addBag(b);
-  }
 }

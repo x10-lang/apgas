@@ -21,7 +21,7 @@ import java.io.Serializable;
  *
  * <pre>
  * public class MyBag implements Bag&lt;MyBag, MyResult&gt;, Serializable {
- * 
+ *
  *   private static final long serialVersionUID = 3582168956043482749L;
  *   // implementation ...
  * }
@@ -59,8 +59,10 @@ public interface Bag<B extends Bag<B, R>, R extends Fold<R>> {
    *
    * @param workAmount
    *          amount of work to process
+   * @param workCollector
+   *          Service provider for the process method
    */
-  public void process(int workAmount);
+  public void process(int workAmount, WorkCollector<R> workCollector);
 
   /**
    * Allows the Bag to submit its result into the user-defined data structure
@@ -85,20 +87,4 @@ public interface Bag<B extends Bag<B, R>, R extends Fold<R>> {
    *         can be shared.
    */
   public B split();
-
-  /**
-   * Sets a {@link WorkCollector} which will collect work spawned by this Bag.
-   * If at some point the {@link Bag} needs to create some new Bag that should
-   * be computed, the {@link WorkCollector} given as parameter should be kept as
-   * a member of the class. Calls to the {@link WorkCollector} services can then
-   * be made in the {@link #process(int)} method.
-   * <p>
-   * When the Bag is split and transferred from one place to another, the member
-   * is updated. If the {@link Bag} does not spawn any {@link Bag}, the
-   * implementation of this method should be left empty.
-   *
-   * @param p
-   *          the new {@link WorkCollector} instance to be kept.
-   */
-  public void setWorkCollector(WorkCollector<R> p);
 }

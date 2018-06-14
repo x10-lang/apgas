@@ -287,7 +287,7 @@ public class UTSBag implements Serializable, Bag<UTSBag, Sum> {
    * @see apgas.glb.Bag#process(int)
    */
   @Override
-  public void process(int workAmount) {
+  public void process(int workAmount, WorkCollector<Sum> workCollector) {
     while (!isEmpty() && workAmount > 0) {
       try {
         expand(encoder());
@@ -318,15 +318,6 @@ public class UTSBag implements Serializable, Bag<UTSBag, Sum> {
   public boolean isEmpty() {
     return size < 1;
   }
-
-  /*
-   * (non-Javadoc)
-   *
-   * @see apgas.glb.Bag#setProcessor(apgas.glb.WorkCollector)
-   */
-  @Override
-  public void setWorkCollector(WorkCollector<Sum> p) {
-  } // Not used
 
   public static String sub(String str, int start, int end) {
     return str.substring(start, Math.min(end, str.length()));

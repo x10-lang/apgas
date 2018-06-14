@@ -165,7 +165,7 @@ public class GLBProcessorTest {
      * @see apgas.glb.Bag#process(int)
      */
     @Override
-    public void process(int workAmount) {
+    public void process(int workAmount, WorkCollector<Sum> p) {
       while (!isEmpty() && workAmount > 0) {
         result++;
         workAmount--;
@@ -229,14 +229,6 @@ public class GLBProcessorTest {
       r.sum += result;
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see apgas.glb.Bag#setWorkCollector(apgas.glb.WorkCollector)
-     */
-    @Override
-    public void setWorkCollector(WorkCollector<Sum> p) { // Not used
-    }
   }
 
 }

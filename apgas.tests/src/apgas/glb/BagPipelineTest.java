@@ -72,7 +72,6 @@ public class BagPipelineTest {
 
     private static final long serialVersionUID = -6717229606753663109L;
     private int qtt;
-    private WorkCollector<Sum> collector;
 
     /*
      * (non-Javadoc)
@@ -80,14 +79,14 @@ public class BagPipelineTest {
      * @see apgas.glb.Bag#process(int)
      */
     @Override
-    public void process(int workAmount) {
+    public void process(int workAmount, WorkCollector<Sum> p) {
       int amount = 0;
       while (workAmount > 0 && qtt > 0) {
         workAmount--;
         qtt--;
         amount++;
       }
-      collector.giveBag(new SecondBag(amount));
+      p.giveBag(new SecondBag(amount));
     }
 
     /*
@@ -125,16 +124,6 @@ public class BagPipelineTest {
     @Override
     public boolean isEmpty() {
       return qtt <= 0;
-    }
-
-    /*
-     * (non-Javadoc)
-     *
-     * @see apgas.glb.Bag#setWorkCollector(apgas.glb.WorkCollector)
-     */
-    @Override
-    public void setWorkCollector(WorkCollector<Sum> p) {
-      collector = p;
     }
 
     /**
@@ -175,7 +164,7 @@ public class BagPipelineTest {
      * @see apgas.glb.Bag#process(int)
      */
     @Override
-    public void process(int workAmount) {
+    public void process(int workAmount, WorkCollector<Sum> p) {
 
       while (workAmount > 0 && qtt > 0) {
         workAmount--;
@@ -219,15 +208,6 @@ public class BagPipelineTest {
     @Override
     public boolean isEmpty() {
       return qtt <= 0;
-    }
-
-    /*
-     * (non-Javadoc)
-     *
-     * @see apgas.glb.Bag#setWorkCollector(apgas.glb.WorkCollector)
-     */
-    @Override
-    public void setWorkCollector(WorkCollector<Sum> p) { // Not used
     }
 
     /**

@@ -306,7 +306,6 @@ final class LoopGLBProcessor extends PlaceLocalObject implements GLBProcessor {
    * {@link #lifelineSteal()}) and stops.
    */
   private void run() {
-    System.err.println(home + " starting");
     synchronized (this) {
       state = -1; // Switch to 'working' mode
     }
@@ -352,7 +351,6 @@ final class LoopGLBProcessor extends PlaceLocalObject implements GLBProcessor {
 
     // Establishing lifeline
     lifelineSteal();
-    System.err.println(home + " stopping");
   }
 
   /**

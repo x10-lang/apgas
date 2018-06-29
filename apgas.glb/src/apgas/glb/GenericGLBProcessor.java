@@ -184,7 +184,6 @@ final class GenericGLBProcessor extends PlaceLocalObject
     while ((p = thieves.poll()) != null) {
 
       final B toGive = (B) bagsToDo.split();
-      System.err.println(p + " stole from " + home);
       uncountedAsyncAt(p, () -> {
         deal(toGive);
       });
@@ -261,7 +260,6 @@ final class GenericGLBProcessor extends PlaceLocalObject
   private <R extends Fold<R> & Serializable, B extends Bag<B, R> & Serializable> void lifelineDeal(
       B q) {
     bagsToDo.giveBag(q);
-    System.err.println(home + " received work");
 
     /*
      * Call to run needs to be done outside of the synchronized block so boolean
@@ -350,7 +348,6 @@ final class GenericGLBProcessor extends PlaceLocalObject
    * {@link #lifelineSteal()}) and stops.
    */
   private void run() {
-    System.err.println(home + " starting");
 
     synchronized (this) {
       state = -1;
@@ -393,7 +390,6 @@ final class GenericGLBProcessor extends PlaceLocalObject
 
     // Establishing lifeline
     lifelineSteal();
-    System.err.println(home + " stopping");
   }
 
   /**

@@ -288,9 +288,10 @@ public class UTSBag implements Serializable, Bag<UTSBag, Sum> {
    */
   @Override
   public void process(int workAmount, WorkCollector<Sum> workCollector) {
+    final MessageDigest md = encoder();
     while (!isEmpty() && workAmount > 0) {
       try {
-        expand(encoder());
+        expand(md);
       } catch (final DigestException e) {
         e.printStackTrace();
       }
@@ -331,32 +332,46 @@ public class UTSBag implements Serializable, Bag<UTSBag, Sum> {
    *          If no argument is given, the default value, 13 is used.
    */
   public static void main(String[] args) {
-    int depth = 13;
+    String config = "";
+    int depth;
+    int workUnit;
+    final GLBProcessor processor;
     try {
       depth = Integer.parseInt(args[0]);
+      workUnit = Integer.parseInt(args[1]);
+      if (Integer.parseInt(args[2]) == 0) {
+        processor = GLBProcessorFactory.LoopGLBProcessor(workUnit, 1);
+        config += "LoopGLBProcessor ";
+      } else {
+        processor = GLBProcessorFactory.GLBProcessor(workUnit, 1,
+            new HypercubeStrategy());
+        config += "Hypercube GenericGLBProcessor ";
+      }
+      config += "UTS depth: " + depth + " Rdm Steals: " + 1 + " Work unit: "
+          + workUnit;
     } catch (final Exception e) {
+      System.err.println("Program requires three arguments :");
+      System.err.println("\t tree depth");
+      System.err.println("\t work unit value");
+      System.err.println(
+          "\t GLB version: 0 for LoopGLBProcessor, 1 for GenericGLBProcessor with hypercube strategy");
+      return;
     }
 
     final MessageDigest md = encoder();
 
-    final GLBProcessor processor = GLBProcessorFactory.GLBProcessor(500, 1,
-        new HypercubeStrategy());
-
     final UTSBag taskBag = new UTSBag(64);
     taskBag.seed(md, 19, depth - 2);
 
-    System.out.println("Warmup...");
+    System.out.println(config);
 
     processor.compute(taskBag, new Sum(0));
 
     final UTSBag secondBag = new UTSBag(64);
     secondBag.seed(md, 19, depth);
 
-    System.out.println("Starting...");
     final long start = System.nanoTime();
     final long count = processor.compute(secondBag, new Sum(0)).sum;
-
-    System.out.println("Finished.");
 
     final long finish = System.nanoTime();
 
@@ -366,4 +381,5 @@ public class UTSBag implements Serializable, Bag<UTSBag, Sum> {
         + sub("" + computationTime / 1e9, 0, 6) + " = "
         + sub("" + (count / (computationTime / 1e3)), 0, 6) + "M nodes/s");
   }
+
 }

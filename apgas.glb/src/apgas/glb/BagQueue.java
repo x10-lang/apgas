@@ -121,14 +121,7 @@ class BagQueue<R extends Fold<R> & Serializable> implements WorkCollector<R> {
   @SuppressWarnings({ "rawtypes", "unchecked" })
   public void process(int workAmount) {
 
-    final int i = lastPlaceWithWork;
-    Bag b = (Bag) bags[i];
-    if (b.isEmpty()) {
-      do {
-        lastPlaceWithWork = (lastPlaceWithWork + 1) % last;
-        b = (Bag) bags[i];
-      } while (b.isEmpty() && i != lastPlaceWithWork);
-    }
+    final Bag b = (Bag) bags[lastPlaceWithWork];
     b.process(workAmount, this);
   }
 

@@ -50,7 +50,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
    * Integer ({@code int}) id's of the places which are susceptible to establish
    * their lifeline on this place.
    */
-  private final int INCOMING_LIFELINES[];
+  private final int incomingLifelines[];
 
   /**
    * Integer ({@code int}) id's of the places on which this place will establish
@@ -80,7 +80,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
    * Number of random steal attempts performed by this place. Can be adjusted to
    * the user's convenience with the constructor.
    */
-  private final int RANDOM_STEAL_ATTEMPTS;
+  private final int randomStealAttempts;
 
   /**
    * Indicates the state of the place at any given time.
@@ -119,7 +119,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
   private <R extends Fold<R> & Serializable> void clear(R init) {
     thieves.clear();
     lifelineThieves.clear();
-    for (final int i : INCOMING_LIFELINES) {
+    for (final int i : incomingLifelines) {
       if (i != 0) {
         lifelineThieves.add(place(i));
       }
@@ -340,7 +340,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
    * {@link #distribute()}).
    * <p>
    * When it runs out of work, attempts a maximum of
-   * {@link #RANDOM_STEAL_ATTEMPTS} steals on other places (method
+   * {@link #randomStealAttempts} steals on other places (method
    * {@link #steal()}). If successful in one of its steals, resumes its
    * processing/distributing routine.
    * <p>
@@ -360,7 +360,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
       }
 
       // Perform steals attempts
-      int attempts = RANDOM_STEAL_ATTEMPTS;
+      int attempts = randomStealAttempts;
       while (attempts > 0 && bagsToDo.isEmpty()) {
         attempts--;
         steal();
@@ -457,6 +457,38 @@ final class GenericGLBProcessor extends PlaceLocalObject
     }
   }
 
+  /**
+   * Clears the {@link LoopGLBProcessor} of all its tasks and results and
+   * prepares it for a new computation.
+   */
+  private <R extends Fold<R> & Serializable> void reset(R init) {
+    finish(() -> {
+      for (final Place p : places()) {
+        asyncAt(p, () -> clear(init));
+      }
+    });
+  }
+
+  /**
+   * Gives back the result that was gathered from the {@link Bag}s contained in
+   * the {@link #bagsToDo} member of all the places. The computation needs to be
+   * over before this method is called.
+   *
+   * @param <R>
+   *          type of the returned {@link Fold}
+   * @return the computation's result
+   */
+  @SuppressWarnings("unchecked")
+  private <R extends Fold<R> & Serializable> R result() {
+    finish(() -> {
+      for (final Place p : places()) {
+        asyncAt(p, () -> gather());
+      }
+    });
+    return (R) result;
+
+  }
+
   /*
    * (non-Javadoc)
    *
@@ -502,38 +534,6 @@ final class GenericGLBProcessor extends PlaceLocalObject
   }
 
   /**
-   * Clears the {@link LoopGLBProcessor} of all its tasks and results and
-   * prepares it for a new computation.
-   */
-  public <R extends Fold<R> & Serializable> void reset(R init) {
-    finish(() -> {
-      for (final Place p : places()) {
-        asyncAt(p, () -> clear(init));
-      }
-    });
-  }
-
-  /**
-   * Gives back the result that was gathered from the {@link Bag}s contained in
-   * the {@link #bagsToDo} member of all the places. The computation needs to be
-   * over before this method is called.
-   *
-   * @param <R>
-   *          type of the returned {@link Fold}
-   * @return the computation's result
-   */
-  @SuppressWarnings("unchecked")
-  private <R extends Fold<R> & Serializable> R result() {
-    finish(() -> {
-      for (final Place p : places()) {
-        asyncAt(p, () -> gather());
-      }
-    });
-    return (R) result;
-
-  }
-
-  /**
    * Private Constructor
    *
    * @param workUnit
@@ -544,16 +544,16 @@ final class GenericGLBProcessor extends PlaceLocalObject
    * @param s
    *          {@link LifelineStrategy} to be followed
    */
-  GenericGLBProcessor(int workUnit, int randomStealAttempts,
+  GenericGLBProcessor(int workUnit, int randomStealAttemptsCount,
       LifelineStrategy s) {
     WORK_UNIT = workUnit;
-    RANDOM_STEAL_ATTEMPTS = randomStealAttempts;
+    randomStealAttempts = randomStealAttemptsCount;
 
     bagsToDo = new ConcurrentBagQueue<>();
 
-    INCOMING_LIFELINES = s.reverseLifeline(home.id, places);
+    incomingLifelines = s.reverseLifeline(home.id, places);
     lifelines = s.lifeline(home.id, places);
-    for (final int i : INCOMING_LIFELINES) {
+    for (final int i : incomingLifelines) {
       if (i != 0) {
         lifelineThieves.add(place(i));
       }

@@ -363,7 +363,7 @@ public class UTSBag implements Serializable, Bag<UTSBag, Sum> {
     final UTSBag taskBag = new UTSBag(64);
     taskBag.seed(md, 19, depth - 2);
 
-    System.out.println(config);
+    System.out.print(config + ";");
 
     processor.compute(taskBag, new Sum(0));
 
@@ -377,9 +377,11 @@ public class UTSBag implements Serializable, Bag<UTSBag, Sum> {
 
     final long computationTime = finish - start;
 
-    System.out.println("Depth: " + depth + ", Performance: " + count + "/"
+    System.out.print("Depth: " + depth + ", Performance: " + count + "/"
         + sub("" + computationTime / 1e9, 0, 6) + " = "
-        + sub("" + (count / (computationTime / 1e3)), 0, 6) + "M nodes/s");
+        + sub("" + (count / (computationTime / 1e3)), 0, 6) + "M nodes/s;"
+        + sub("" + (count / (computationTime / 1e3)), 0, 6) + ";");
+    System.out.println();
   }
 
 }

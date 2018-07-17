@@ -54,7 +54,7 @@ import java.io.Serializable;
  * @see Bag
  *
  */
-public interface Fold<R extends Fold<R>> {
+public interface Fold<R extends Fold<R> & Serializable> {
 
   /**
    * Folds (merges) the given parameter's result into this instance.

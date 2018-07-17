@@ -31,7 +31,7 @@ import java.io.Serializable;
  * @see Fold
  *
  */
-public interface Bag<B extends Bag<B, R>, R extends Fold<R>> {
+public interface Bag<B extends Bag<B, R> & Serializable, R extends Fold<R> & Serializable> {
 
   /**
    * Indicates if the taskBag is empty, that is if there is no more work to

@@ -13,3 +13,4 @@ Require-Bundle: com.hazelcast;bundle-version="3.7.1";visibility:=reexport,
  org.objenesis;bundle-version="2.1.0"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-Vendor: x10-users@lists.sourceforge.net
+Automatic-Module-Name: apgas

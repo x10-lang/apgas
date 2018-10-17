@@ -7,6 +7,8 @@ import static apgas.Constructs.*;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -67,6 +69,16 @@ final class GenericGLBProcessor extends PlaceLocalObject
    * its lifelines.
    */
   private final int lifelines[];
+
+  /**
+   * Array indicating if the lifelines have been activated. The indeces in the
+   * array match those of member {@link #lifelines}.
+   * <p>
+   * For instance, if {@code lifelines[0]} value is 2 and the value of
+   * {@code lifelineActivated[0]} is false, it means the lifeline from this
+   * place to place 2 is not activated.
+   */
+  private final Map<Integer, Boolean> lifelineActivated = new HashMap<>();
 
   /**
    * Collection of lifeline thieves asking for work from this place. They will
@@ -135,6 +147,11 @@ final class GenericGLBProcessor extends PlaceLocalObject
         lifelineThieves.add(place(i));
       }
     }
+    final boolean lifelinesAreActivated = home.id != 0;
+    for (final int i : lifelines) {
+      lifelineActivated.put(i, lifelinesAreActivated);
+    }
+
     state = -2;
     bagsToDo = new ConcurrentBagQueue<R>();
     result = init;
@@ -204,12 +221,13 @@ final class GenericGLBProcessor extends PlaceLocalObject
       });
     }
 
+    final int h = home.id;
     while ((p = lifelineThieves.poll()) != null) {
       final B toGive = (B) bagsToDo.split();
       if (toGive != null) {
         log.lifelineStealsSuffered++;
         asyncAt(p, () -> {
-          lifelineDeal(toGive);
+          lifelineDeal(toGive, h);
         });
       } else {
         /*
@@ -274,14 +292,18 @@ final class GenericGLBProcessor extends PlaceLocalObject
    */
   @SuppressWarnings("unchecked")
   private <R extends Fold<R> & Serializable, B extends Bag<B, R> & Serializable> void lifelineDeal(
-      B q) {
+      B q, int sender) {
     bagsToDo.giveBag(q);
 
     log.lifelineStealsSuccess++;
+    synchronized (lifelineActivated) {
+      lifelineActivated.put(sender, false);
+    }
     /*
      * Call to run needs to be done outside of the synchronized block so boolean
      * toLaunch is used to carry the information
      */
+
     boolean toLaunch = false;
     synchronized (this) {
       if (state == -2) {
@@ -308,12 +330,18 @@ final class GenericGLBProcessor extends PlaceLocalObject
       return;
     }
     final Place h = home;
-    for (final int i : lifelines) {
-      log.lifelineStealsAttempted++;
-      asyncAt(place(i), () -> {
-        lifelineThieves.add(h);
-        log.lifelineStealsReceived++;
-      });
+    synchronized (lifelineActivated) {
+
+      for (final int i : lifelines) {
+        if (!lifelineActivated.get(i)) {
+          lifelineActivated.put(i, true);
+          log.lifelineStealsAttempted++;
+          asyncAt(place(i), () -> {
+            lifelineThieves.add(h);
+            log.lifelineStealsReceived++;
+          });
+        }
+      }
     }
   }
 

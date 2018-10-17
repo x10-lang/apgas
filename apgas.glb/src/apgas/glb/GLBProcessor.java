@@ -64,4 +64,13 @@ public interface GLBProcessor {
    */
   public <R extends Fold<R> & Serializable, B extends Bag<B, R> & Serializable> R compute(
       Collection<B> bags, R result);
+
+  /**
+   * Gives back the object which stores all the information about the runtime of
+   * the last computation performed by the GLB. The instance of every place is
+   * arranged in an array, the indeces correspond to the places' number.
+   *
+   * @return array of {@link Logger}, one logger for each place.
+   */
+  public Logger[] getLogger();
 }

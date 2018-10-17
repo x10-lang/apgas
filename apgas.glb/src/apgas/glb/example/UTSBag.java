@@ -12,6 +12,7 @@ import apgas.glb.Bag;
 import apgas.glb.GLBProcessor;
 import apgas.glb.GLBProcessorFactory;
 import apgas.glb.HypercubeStrategy;
+import apgas.glb.Logger;
 import apgas.glb.WorkCollector;
 
 /**
@@ -377,11 +378,19 @@ public class UTSBag implements Serializable, Bag<UTSBag, Sum> {
 
     final long computationTime = finish - start;
 
-    System.out.print("Depth: " + depth + ", Performance: " + count + "/"
-        + sub("" + computationTime / 1e9, 0, 6) + " = "
+    System.out.print("Depth: " + depth + ", Performance: " + count + "nodes / "
+        + sub("" + computationTime / 1e9, 0, 6) + "seconds = "
         + sub("" + (count / (computationTime / 1e3)), 0, 6) + "M nodes/s;"
         + sub("" + (count / (computationTime / 1e3)), 0, 6) + ";");
     System.out.println();
+
+    final Logger[] logs = processor.getLogger();
+    for (int i = 0; i < logs.length; i++) {
+      System.err.println("Place " + i);
+      logs[i].print(System.err);
+
+    }
+
   }
 
 }

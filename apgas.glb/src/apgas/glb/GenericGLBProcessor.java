@@ -32,6 +32,16 @@ import apgas.util.PlaceLocalObject;
 final class GenericGLBProcessor extends PlaceLocalObject
     implements GLBProcessor {
 
+  /** Logger object used to store the runtime of the GLB place */
+  private final Logger log;
+
+  /**
+   * Member used for the places to send their log instance
+   *
+   * @see #getLogger()
+   */
+  private Logger[] logs;
+
   /** Collection of tasks bags to be processed */
   @SuppressWarnings("rawtypes")
   private ConcurrentBagQueue bagsToDo;
@@ -117,6 +127,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
    *          come
    */
   private <R extends Fold<R> & Serializable> void clear(R init) {
+    log.reset();
     thieves.clear();
     lifelineThieves.clear();
     for (final int i : incomingLifelines) {
@@ -156,6 +167,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
      */
     if (gift != null) {
       bagsToDo.giveBag(gift);
+      log.stealsSuccess++;
     }
 
     /*
@@ -184,6 +196,9 @@ final class GenericGLBProcessor extends PlaceLocalObject
     while ((p = thieves.poll()) != null) {
 
       final B toGive = (B) bagsToDo.split();
+      if (toGive != null) {
+        log.stealsSuffered++;
+      }
       uncountedAsyncAt(p, () -> {
         deal(toGive);
       });
@@ -192,6 +207,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
     while ((p = lifelineThieves.poll()) != null) {
       final B toGive = (B) bagsToDo.split();
       if (toGive != null) {
+        log.lifelineStealsSuffered++;
         asyncAt(p, () -> {
           lifelineDeal(toGive);
         });
@@ -261,6 +277,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
       B q) {
     bagsToDo.giveBag(q);
 
+    log.lifelineStealsSuccess++;
     /*
      * Call to run needs to be done outside of the synchronized block so boolean
      * toLaunch is used to carry the information
@@ -292,8 +309,10 @@ final class GenericGLBProcessor extends PlaceLocalObject
     }
     final Place h = home;
     for (final int i : lifelines) {
+      log.lifelineStealsAttempted++;
       asyncAt(place(i), () -> {
         lifelineThieves.add(h);
+        log.lifelineStealsReceived++;
       });
     }
   }
@@ -315,6 +334,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
    */
   private void request(Place p) {
     synchronized (this) {
+      log.stealsReceived++;
       /*
        * If the place is currently performing computation, adds the thief to its
        * list of pending thief. The work will be shared when this place stops
@@ -348,7 +368,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
    * {@link #lifelineSteal()}) and stops.
    */
   private void run() {
-
+    log.startLive();
     synchronized (this) {
       state = -1;
     }
@@ -363,6 +383,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
       int attempts = randomStealAttempts;
       while (attempts > 0 && bagsToDo.isEmpty()) {
         attempts--;
+        log.stealsAttempted++;
         steal();
       }
 
@@ -374,6 +395,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
           break;
         }
       }
+
     }
 
     /**
@@ -421,6 +443,8 @@ final class GenericGLBProcessor extends PlaceLocalObject
       state = p;
     }
 
+    log.stopLive();
+
     /*
      * Calls "request" at place p, passing itself as parameter. The call is
      * 'uncounted' as this asynchronous call is about program "logistics" and
@@ -438,6 +462,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
         }
       }
     }
+    log.startLive();
   }
 
   /**
@@ -489,6 +514,19 @@ final class GenericGLBProcessor extends PlaceLocalObject
 
   }
 
+  /**
+   * Sends the local log instance to place 0
+   */
+  private void sendLogger() {
+    final Logger l = log;
+    final int placeId = home.id;
+    asyncAt(place(0), () -> {
+      synchronized (logs) {
+        logs[placeId] = l;
+      }
+    });
+  }
+
   /*
    * (non-Javadoc)
    *
@@ -533,6 +571,28 @@ final class GenericGLBProcessor extends PlaceLocalObject
     }
   }
 
+  /*
+   * (non-Javadoc)
+   *
+   * @see apgas.glb.GLBProcessor#getLogger()
+   */
+  @Override
+  public Logger[] getLogger() {
+    logs = new Logger[places];
+    logs[0] = log;
+    finish(() -> {
+      for (final Place p : places()) {
+        if (p.id != 0) {
+
+          asyncAt(p, () -> {
+            sendLogger();
+          });
+        }
+      }
+    });
+    return logs;
+  }
+
   /**
    * Private Constructor
    *
@@ -546,6 +606,7 @@ final class GenericGLBProcessor extends PlaceLocalObject
    */
   GenericGLBProcessor(int workUnit, int randomStealAttemptsCount,
       LifelineStrategy s) {
+    log = new Logger();
     WORK_UNIT = workUnit;
     randomStealAttempts = randomStealAttemptsCount;
 
